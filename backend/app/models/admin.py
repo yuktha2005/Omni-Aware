@@ -1,5 +1,5 @@
 from sqlalchemy import Column, BigInteger, String, Boolean, DateTime
-from datetime import datetime
+from datetime import datetime, timezone
 
 from database.connection import Base
 
@@ -16,5 +16,5 @@ class Admin(Base):
     phone = Column(String(20))
     is_active = Column(Boolean, default=True)
     last_login_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

@@ -263,7 +263,7 @@ def test_campaign_scheduling_and_cancellation(test_setup):
     camp_id = create_res.json()["id"]
 
     # 2. Schedule campaign
-    future_time = (datetime.datetime.utcnow() + datetime.timedelta(days=2)).isoformat()
+    future_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)).isoformat()
     sched_res = client.post(
         f"/campaigns/{camp_id}/schedule",
         json={
@@ -497,7 +497,7 @@ def test_end_to_end_college_health_awareness_campaign(test_setup):
     schedule_res = client.post(
         f"/campaigns/{target_campaign_id}/schedule",
         json={
-            "scheduled_at": datetime.datetime.utcnow().isoformat(),
+            "scheduled_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "scheduled_timezone": "Asia/Kolkata",
             "selected_channels": ["email", "sms"]
         },

@@ -1,56 +1,42 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const BACKEND = 'http://localhost:8000'
+
+const proxyConfig = {
+  target: BACKEND,
+  changeOrigin: true,
+  secure: false,
+}
+
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
     open: true,
     proxy: {
-      '/auth': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/recipients': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/audiences': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/segments': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/master': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/campaigns': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/ai': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/analytics': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/broadcasts': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        secure: false,
+      '/auth':       proxyConfig,
+      '/recipients': proxyConfig,
+      '/audiences':  proxyConfig,
+      '/segments':   proxyConfig,
+      '/imports':    proxyConfig,
+      '/master':     proxyConfig,
+      '/campaigns':  proxyConfig,
+      '/ai':         proxyConfig,
+      '/analytics':  proxyConfig,
+      '/broadcasts': proxyConfig,
+      '/health':     proxyConfig,
+    },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          axios: ['axios'],
+        },
       },
     },
   },

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -55,8 +55,8 @@ def register(
         organization=register_data.organization.strip() if register_data.organization else None,
         phone=register_data.phone.strip() if register_data.phone else None,
         is_active=True,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
 
     db.add(new_user)
@@ -110,7 +110,7 @@ def login(
             detail="Invalid email or password"
         )
 
-    user.last_login_at = datetime.utcnow()
+    user.last_login_at = datetime.now(timezone.utc)
     db.commit()
 
     access_token = create_access_token(
@@ -160,7 +160,7 @@ def update_user_role(
     user.role = req.role.strip().lower()
     if req.is_active is not None:
         user.is_active = req.is_active
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(user)

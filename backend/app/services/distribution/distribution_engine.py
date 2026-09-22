@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 
@@ -115,7 +115,7 @@ class DistributionEngine:
 
             # Update campaign state
             campaign.status = "running"
-            campaign.started_at = datetime.utcnow()
+            campaign.started_at = datetime.now(timezone.utc)
             db.commit()
 
             selected_channels = channels or campaign.selected_channels or ["email", "sms"]
@@ -205,7 +205,7 @@ class DistributionEngine:
                     if not eligible:
                         delivery.status = "FAILED"
                         delivery.failure_reason = reason
-                        delivery.failed_at = datetime.utcnow()
+                        delivery.failed_at = datetime.now(timezone.utc)
                         total_failed += 1
                         db.commit()
 
@@ -242,7 +242,7 @@ class DistributionEngine:
                     delivery.message_id = result.message_id
                     delivery.status = result.status
                     delivery.provider = result.provider
-                    delivery.sent_at = result.sent_at or datetime.utcnow()
+                    delivery.sent_at = result.sent_at or datetime.now(timezone.utc)
                     delivery.delivered_at = result.delivered_at
 
                     if result.success:
@@ -253,30 +253,30 @@ class DistributionEngine:
                             recipient_id=recipient.id,
                             channel=channel.lower(),
                             event_type="SENT",
-                            event_timestamp=result.sent_at or datetime.utcnow()
+                            event_timestamp=result.sent_at or datetime.now(timezone.utc)
                         )
                         event_del = EngagementEvent(
                             campaign_id=campaign.id,
                             recipient_id=recipient.id,
                             channel=channel.lower(),
                             event_type="DELIVERED",
-                            event_timestamp=result.delivered_at or datetime.utcnow()
+                            event_timestamp=result.delivered_at or datetime.now(timezone.utc)
                         )
                         db.add(event_sent)
                         db.add(event_del)
                     else:
                         total_failed += 1
-                        delivery.failed_at = datetime.utcnow()
+                        delivery.failed_at = datetime.now(timezone.utc)
                         delivery.failure_reason = result.error_message
                         if delivery.retry_count < delivery.max_retries:
                             delivery.status = "RETRYING"
-                            delivery.next_retry_at = datetime.utcnow() + timedelta(seconds=60)
+                            delivery.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=60)
 
                     db.commit()
 
             # Finalize campaign stats
             campaign.status = "completed"
-            campaign.completed_at = datetime.utcnow()
+            campaign.completed_at = datetime.now(timezone.utc)
             campaign.total_recipients = len(recipients)
             campaign.total_delivered = total_delivered
             campaign.total_failed = total_failed
@@ -362,7 +362,7 @@ class DistributionEngine:
                 now_recovered += 1
                 delivery.status = result.status
                 delivery.failure_reason = None
-                delivery.delivered_at = result.delivered_at or datetime.utcnow()
+                delivery.delivered_at = result.delivered_at or datetime.now(timezone.utc)
                 delivery.next_retry_at = None
 
                 db.add(EngagementEvent(
@@ -370,7 +370,7 @@ class DistributionEngine:
                     recipient_id=recipient.id,
                     channel=delivery.channel,
                     event_type="DELIVERED",
-                    event_timestamp=datetime.utcnow()
+                    event_timestamp=datetime.now(timezone.utc)
                 ))
             else:
                 delivery.failure_reason = result.error_message
@@ -379,7 +379,7 @@ class DistributionEngine:
                     delivery.next_retry_at = None
                 else:
                     delivery.status = "RETRYING"
-                    delivery.next_retry_at = datetime.utcnow() + timedelta(seconds=60 * (2 ** delivery.retry_count))
+                    delivery.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=60 * (2 ** delivery.retry_count))
 
             db.commit()
 

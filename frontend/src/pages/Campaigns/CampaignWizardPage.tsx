@@ -24,6 +24,7 @@ const CampaignWizardPage = () => {
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [aiProcessingStep, setAiProcessingStep] = useState("");
 
   // Step 1: Basic Campaign Info
   const [formData, setFormData] = useState({
@@ -60,6 +61,10 @@ const CampaignWizardPage = () => {
 
     try {
       setLoading(true);
+      // Run AI Pipeline — show processing steps with visual feedback
+      setAiProcessingStep("🔍 Analyzing campaign objectives...");
+      await new Promise((r) => setTimeout(r, 400));
+      setAiProcessingStep("✍️ Generating multilingual content variants...");
       // Run AI Pipeline
       const pipelineRes = await campaignAPI.processPipeline({
         campaign_title: formData.title,
@@ -74,6 +79,10 @@ const CampaignWizardPage = () => {
         audience_roles: targetRoles,
         save_to_db: true,
       });
+      setAiProcessingStep("🌍 Translating into target languages...");
+      await new Promise((r) => setTimeout(r, 300));
+      setAiProcessingStep("🧠 Running quality & compliance checks...");
+      await new Promise((r) => setTimeout(r, 300));
 
       const resData = pipelineRes.data;
       setGeneratedContents(resData.processed_contents || []);
@@ -81,10 +90,12 @@ const CampaignWizardPage = () => {
         setCreatedCampaignId(resData.campaign_id);
       }
       showToast("success", `Generated ${resData.total_generated || 0} multilingual campaign variations!`);
+      setAiProcessingStep("");
       setStep(2);
     } catch (err: any) {
       const msg = err.response?.data?.detail || "AI generation failed";
       showToast("error", msg);
+      setAiProcessingStep("");
     } finally {
       setLoading(false);
     }
@@ -145,6 +156,33 @@ const CampaignWizardPage = () => {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
+      <ToastManager toast={toast} />
+
+      {/* AI Processing Overlay */}
+      {loading && aiProcessingStep && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-sky-50">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-200 border-t-sky-600" />
+            </div>
+            <h3 className="mb-2 text-lg font-bold text-slate-900">AI Engine Running</h3>
+            <p className="mb-4 text-sm font-medium text-sky-600 animate-pulse">{aiProcessingStep}</p>
+            <div className="space-y-1.5 text-xs text-slate-400">
+              <p>This usually takes 15–30 seconds.</p>
+              <p>Generating, translating & verifying {targetLanguages.length} languages × {targetRoles.length} roles...</p>
+            </div>
+            <div className="mt-5 flex gap-1 justify-center">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-1.5 w-6 rounded-full bg-sky-400 opacity-60"
+                  style={{ animationDelay: `${i * 0.15}s`, animation: "pulse 1.2s ease-in-out infinite" }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Wizard Step Progress */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-4">
         <div>

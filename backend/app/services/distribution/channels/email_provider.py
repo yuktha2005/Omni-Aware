@@ -4,7 +4,7 @@ import smtplib
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Tuple, Optional
 from services.distribution.channels.base import BaseChannelProvider, ChannelSendResult
 
@@ -80,7 +80,7 @@ class EmailChannelProvider(BaseChannelProvider):
         """
 
         message_id = f"email-{uuid.uuid4().hex[:16]}"
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if self.is_mock:
             # Mock mode: simulates instantaneous delivery

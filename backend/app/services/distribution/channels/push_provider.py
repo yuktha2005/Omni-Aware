@@ -1,7 +1,7 @@
 import os
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Tuple, Optional
 import requests
 from services.distribution.channels.base import BaseChannelProvider, ChannelSendResult
@@ -62,7 +62,7 @@ class PushNotificationProvider(BaseChannelProvider):
         campaign_id = getattr(campaign, "id", 0)
 
         message_id = f"push-{uuid.uuid4().hex[:16]}"
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if self.is_mock:
             logger.info(f"[MOCK PUSH] Sent to DeviceToken {token[:15]}... | Title: {title}")

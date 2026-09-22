@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, status
 from sqlalchemy.orm import Session
 
@@ -46,8 +46,16 @@ def schedule_campaign(
         campaign.target_segment_id = request.target_segment_id
 
     # If scheduled in future, mark SCHEDULED; otherwise mark QUEUED
-    if request.scheduled_at and request.scheduled_at > datetime.utcnow():
-        campaign.status = "scheduled"
+    # Handle both timezone-naive and timezone-aware scheduled_at values
+    now_utc = datetime.now(timezone.utc)
+    if request.scheduled_at:
+        sa = request.scheduled_at
+        # Make comparison safe: if sa is naive, compare against utcnow() naive
+        if sa.tzinfo is not None:
+            is_future = sa > now_utc
+        else:
+            is_future = sa > now_utc.replace(tzinfo=None)
+        campaign.status = "scheduled" if is_future else "queued"
     else:
         campaign.status = "queued"
 

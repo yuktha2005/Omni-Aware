@@ -2,7 +2,7 @@ import os
 import re
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Tuple, Optional
 import requests
 from services.distribution.channels.base import BaseChannelProvider, ChannelSendResult
@@ -79,7 +79,7 @@ class WhatsAppChannelProvider(BaseChannelProvider):
         wa_lang = "en_US" if language_code == "en" else language_code
 
         message_id = f"wamid.HBgL{uuid.uuid4().hex[:20]}"
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if self.is_mock:
             logger.info(

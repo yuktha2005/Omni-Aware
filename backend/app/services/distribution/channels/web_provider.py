@@ -1,6 +1,6 @@
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Tuple, Optional
 from services.distribution.channels.base import BaseChannelProvider, ChannelSendResult
 
@@ -26,7 +26,7 @@ class WebBroadcastProvider(BaseChannelProvider):
         campaign_id = getattr(campaign, "id", 0)
         title = getattr(content, "message_title", "Community Awareness Notice")
         message_id = f"web-{campaign_id}-{uuid.uuid4().hex[:10]}"
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         logger.info(f"[WEB BROADCAST] Published announcement for Campaign #{campaign_id}: {title}")
 
