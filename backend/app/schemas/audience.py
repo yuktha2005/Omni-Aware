@@ -15,6 +15,36 @@ class AudienceFilterRequest(BaseModel):
     consent_status: Optional[str] = None
 
 
+class SegmentRuleResponse(BaseModel):
+    id: int
+    segment_id: int
+    rules: dict
+
+    class Config:
+        from_attributes = True
+
+
+class SegmentResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    segment_type: str
+    is_active: bool
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    rules: Optional[dict] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SegmentCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    segment_type: str = "dynamic"
+    rules: dict = {}
+
+
 class RecipientCreate(BaseModel):
     external_reference_id: str
     first_name: str

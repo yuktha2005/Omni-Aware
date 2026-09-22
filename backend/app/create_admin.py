@@ -6,19 +6,23 @@ from services.auth_service import hash_password
 db = SessionLocal()
 
 try:
-    admin = Admin(
-        full_name="System Admin",
-        email="admin@example.com",
-        password_hash=hash_password("TestPassword123!"),
-        phone="9000000000",
-        is_active=True
-    )
+    existing = db.query(Admin).filter(Admin.email == "admin@example.com").first()
+    if existing:
+        print(f"Admin already exists. ID: {existing.id} (Email: {existing.email})")
+    else:
+        admin = Admin(
+            full_name="System Admin",
+            email="admin@example.com",
+            password_hash=hash_password("TestPassword123!"),
+            phone="9000000000",
+            is_active=True
+        )
 
-    db.add(admin)
-    db.commit()
-    db.refresh(admin)
+        db.add(admin)
+        db.commit()
+        db.refresh(admin)
 
-    print(f"Admin created successfully. ID: {admin.id}")
+        print(f"Admin created successfully. ID: {admin.id}")
 
 finally:
     db.close()

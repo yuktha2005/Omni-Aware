@@ -1,0 +1,96 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --app-bg: #f3f7fb;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-strong: #ffffff;
+  --panel-border: rgba(148, 163, 184, 0.22);
+  --text: #0f172a;
+  --muted: #475569;
+  --muted-soft: #64748b;
+  --primary: #0284c7;
+  --primary-soft: #e0f2fe;
+  --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-slate-100 font-sans text-slate-800 antialiased;
+    background-image: radial-gradient(circle at top left, rgba(14, 165, 233, 0.10), transparent 36%),
+      radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.12), transparent 28%),
+      var(--app-bg);
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+
+  * {
+    @apply border-slate-200;
+  }
+
+  ::selection {
+    background: rgba(14, 165, 233, 0.18);
+  }
+}
+
+@layer components {
+  .shell-surface {
+    @apply rounded-2xl border border-slate-200/80 bg-white/80 shadow-soft backdrop-blur-sm;
+  }
+
+  .page-header {
+    @apply mb-8 flex flex-col gap-2;
+  }
+
+  .page-header h1 {
+    @apply text-2xl font-bold tracking-tight text-slate-900;
+  }
+
+  .page-header p {
+    @apply text-sm text-slate-500;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200;
+  }
+
+  .nav-item-active {
+    @apply bg-sky-50 text-sky-700 shadow-sm ring-1 ring-sky-100;
+  }
+
+  .nav-item-inactive {
+    @apply text-slate-300 hover:bg-slate-800/70 hover:text-white;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em];
+  }
+
+  .primary-button {
+    @apply inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-all duration-200 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .secondary-button {
+    @apply inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900;
+  }
+
+  .field-input {
+    @apply mt-1 block w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm text-slate-700 shadow-sm transition-all duration-200 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

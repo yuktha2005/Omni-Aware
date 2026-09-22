@@ -1,0 +1,49 @@
+{
+  "name": "AI-Powered Multilingual Public Awareness Platform",
+  "short_name": "AwarenessPWA",
+  "description": "Mass communication, audience segmentation, multilingual AI content generation, and multi-channel public awareness distribution platform.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0284c7",
+  "categories": ["productivity", "communication", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View overall campaign overview"
+    },
+    {
+      "name": "Campaign Wizard",
+      "url": "/campaigns/wizard",
+      "description": "Create and distribute a new campaign"
+    },
+    {
+      "name": "Analytics",
+      "url": "/analytics",
+      "description": "Inspect multi-channel delivery metrics"
+    }
+  ]
+}

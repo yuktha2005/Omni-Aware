@@ -11,12 +11,163 @@ from models.master import (
     Organization,
     OrganizationUnit
 )
+from schemas.audience import SegmentCreate
+from services.auth_service import get_current_admin
 
 
 router = APIRouter(
     prefix="/segments",
     tags=["Audience Segments"]
 )
+
+
+# =========================================================
+# LIST ALL SEGMENTS
+# =========================================================
+
+@router.get("/")
+def get_segments(
+    db: Session = Depends(get_db)
+):
+    segments = (
+        db.query(AudienceSegment)
+        .order_by(AudienceSegment.id)
+        .all()
+    )
+
+    result = []
+
+    for seg in segments:
+        rule_record = (
+            db.query(AudienceSegmentRule)
+            .filter(
+                AudienceSegmentRule.segment_id == seg.id
+            )
+            .first()
+        )
+
+        rules = rule_record.rules if rule_record else {}
+
+        result.append({
+            "id": seg.id,
+            "name": seg.name,
+            "description": seg.description,
+            "segment_type": seg.segment_type,
+            "is_active": seg.is_active,
+            "created_at": (
+                seg.created_at.isoformat()
+                if seg.created_at else None
+            ),
+            "updated_at": (
+                seg.updated_at.isoformat()
+                if seg.updated_at else None
+            ),
+            "rules": rules
+        })
+
+    return result
+
+
+# =========================================================
+# CREATE SEGMENT - ADMIN ONLY
+# =========================================================
+
+@router.post("/")
+def create_segment(
+    segment_data: SegmentCreate,
+    db: Session = Depends(get_db),
+    current_admin=Depends(get_current_admin)
+):
+    existing = (
+        db.query(AudienceSegment)
+        .filter(AudienceSegment.name == segment_data.name)
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Segment with this name already exists"
+        )
+
+    segment = AudienceSegment(
+        name=segment_data.name,
+        description=segment_data.description,
+        segment_type=segment_data.segment_type,
+        is_active=True
+    )
+
+    db.add(segment)
+    db.commit()
+    db.refresh(segment)
+
+    rule = AudienceSegmentRule(
+        segment_id=segment.id,
+        rules=segment_data.rules
+    )
+
+    db.add(rule)
+    db.commit()
+
+    return {
+        "message": "Segment created successfully",
+        "segment": {
+            "id": segment.id,
+            "name": segment.name,
+            "description": segment.description,
+            "segment_type": segment.segment_type,
+            "is_active": segment.is_active
+        }
+    }
+
+
+# =========================================================
+# GET SEGMENT DETAIL
+# =========================================================
+
+@router.get("/{segment_id}")
+def get_segment(
+    segment_id: int,
+    db: Session = Depends(get_db)
+):
+    segment = (
+        db.query(AudienceSegment)
+        .filter(AudienceSegment.id == segment_id)
+        .first()
+    )
+
+    if not segment:
+        raise HTTPException(
+            status_code=404,
+            detail="Segment not found"
+        )
+
+    rule_record = (
+        db.query(AudienceSegmentRule)
+        .filter(
+            AudienceSegmentRule.segment_id == segment_id
+        )
+        .first()
+    )
+
+    rules = rule_record.rules if rule_record else {}
+
+    return {
+        "id": segment.id,
+        "name": segment.name,
+        "description": segment.description,
+        "segment_type": segment.segment_type,
+        "is_active": segment.is_active,
+        "created_at": (
+            segment.created_at.isoformat()
+            if segment.created_at else None
+        ),
+        "updated_at": (
+            segment.updated_at.isoformat()
+            if segment.updated_at else None
+        ),
+        "rules": rules
+    }
 
 
 @router.get("/{segment_id}/preview")
