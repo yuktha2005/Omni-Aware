@@ -27,6 +27,14 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def test_setup():
+    import os
+    os.environ["EMAIL_FORCE_MOCK"] = "true"
+    os.environ["SMS_FORCE_MOCK"] = "true"
+    os.environ["WHATSAPP_FORCE_MOCK"] = "true"
+    channel_manager.register_provider("email", EmailChannelProvider())
+    channel_manager.register_provider("sms", SMSChannelProvider())
+    channel_manager.register_provider("whatsapp", WhatsAppChannelProvider())
+
     from database.connection import SessionLocal
     db = SessionLocal()
 

@@ -17,6 +17,8 @@ const pagetitles: Record<string, string> = {
   "/content-library": "Content Library",
   "/scheduling": "Campaign Scheduling",
   "/analytics": "Engagement Analytics",
+  "/system-flow": "System Architecture & Flow",
+  "/architecture": "System Architecture & Flow",
   "/settings": "Settings",
 };
 
@@ -39,7 +41,7 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-100/80">
+    <div className="flex h-screen overflow-hidden bg-slate-50">
       <div className="hidden lg:block">
         <Sidebar />
       </div>

@@ -91,7 +91,7 @@ class AnalyticsService:
 
         total_recipients = len(set([d.recipient_id for d in deliveries]))
         total_sent = len([d for d in deliveries if d.status in ["SENT", "DELIVERED"]])
-        total_delivered = len([d for d in deliveries if d.status == "DELIVERED"])
+        total_delivered = len([d for d in deliveries if d.status in ["DELIVERED", "SENT"]])
         total_failed = len([d for d in deliveries if d.status == "FAILED"])
 
         delivery_rate = round((total_delivered / total_sent * 100), 1) if total_sent > 0 else 0.0
@@ -103,7 +103,7 @@ class AnalyticsService:
         total_participated = len([e for e in events if e.event_type == "PARTICIPATED"])
 
         # Email & Push deliverable count for open rate calculation
-        trackable_delivered = len([d for d in deliveries if d.channel in ["email", "push"] and d.status == "DELIVERED"])
+        trackable_delivered = len([d for d in deliveries if d.channel in ["email", "push"] and d.status in ["DELIVERED", "SENT"]])
         open_rate = round((total_opened / trackable_delivered * 100), 1) if trackable_delivered > 0 else "N/A"
         click_rate = round((total_clicked / total_delivered * 100), 1) if total_delivered > 0 else 0.0
         response_rate = round((total_responded / total_delivered * 100), 1) if total_delivered > 0 else 0.0
@@ -118,7 +118,7 @@ class AnalyticsService:
                 continue
 
             ch_sent = len([d for d in ch_delivs if d.status in ["SENT", "DELIVERED"]])
-            ch_delivered = len([d for d in ch_delivs if d.status == "DELIVERED"])
+            ch_delivered = len([d for d in ch_delivs if d.status in ["DELIVERED", "SENT"]])
             ch_failed = len([d for d in ch_delivs if d.status == "FAILED"])
             ch_deliv_rate = round((ch_delivered / ch_sent * 100), 1) if ch_sent > 0 else 0.0
 

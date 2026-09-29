@@ -184,28 +184,51 @@ const CampaignWizardPage = () => {
         </div>
       )}
       {/* Wizard Step Progress */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">AI Campaign Wizard</h1>
-          <p className="text-sm text-slate-500">
-            Design, translate, personalize, and distribute awareness content across channels.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {[1, 2, 3, 4].map((s) => (
-            <div
-              key={s}
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
-                step === s
-                  ? "bg-primary-600 text-white ring-4 ring-primary-100"
-                  : step > s
-                  ? "bg-emerald-500 text-white"
-                  : "bg-slate-100 text-slate-400"
-              }`}
-            >
-              {step > s ? "✓" : s}
+      <div className="rounded-xl border border-slate-200/90 bg-white p-6 shadow-card">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600">
+                AI Generation Studio
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="text-xs text-slate-500">Step {step} of 4</span>
             </div>
-          ))}
+            <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 mt-1">
+              Multi-Channel Campaign Wizard
+            </h1>
+            <p className="text-xs text-slate-500">
+              Compose, contextualize, translate, and dispatch verified multilingual public awareness broadcasts.
+            </p>
+          </div>
+
+          {/* Stepper pills */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {[
+              { num: 1, name: "Brief & Audience" },
+              { num: 2, name: "AI Variants" },
+              { num: 3, name: "Channels" },
+              { num: 4, name: "Schedule & Launch" },
+            ].map((s) => (
+              <div key={s.num} className="flex items-center gap-2">
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                    step === s.num
+                      ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-100"
+                      : step > s.num
+                      ? "bg-emerald-500 text-white"
+                      : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {step > s.num ? "✓" : s.num}
+                </div>
+                <span className={`hidden xl:inline text-xs font-semibold ${step === s.num ? "text-slate-900" : "text-slate-400"}`}>
+                  {s.name}
+                </span>
+                {s.num < 4 && <div className="hidden sm:block h-0.5 w-4 bg-slate-200" />}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

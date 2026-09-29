@@ -20,7 +20,12 @@ class WhatsAppChannelProvider(BaseChannelProvider):
         self.template_name = os.getenv("WHATSAPP_TEMPLATE_NAME", "public_awareness_broadcast")
         self.force_mock = os.getenv("WHATSAPP_FORCE_MOCK", "true").lower() in ["true", "1", "yes"]
 
-        self.is_mock = self.force_mock or not bool(self.api_url and self.access_token)
+        is_placeholder = (
+            not self.access_token 
+            or any(x in str(self.access_token).lower() for x in ["your_", "placeholder", "xxx"])
+            or any(x in str(self.phone_number_id).lower() for x in ["your_", "placeholder", "xxx"])
+        )
+        self.is_mock = self.force_mock or not bool(self.api_url and self.access_token) or is_placeholder
         self.provider_name = "Mock-WhatsApp-Cloud-API (Pending Production Credentials)" if self.is_mock else "WhatsApp-Cloud-API"
 
     def clean_phone_number(self, phone: Optional[str]) -> Optional[str]:

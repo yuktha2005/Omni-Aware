@@ -1,33 +1,39 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   color-scheme: light;
-  --app-bg: #f3f7fb;
-  --surface: rgba(255, 255, 255, 0.8);
-  --surface-strong: #ffffff;
-  --panel-border: rgba(148, 163, 184, 0.22);
-  --text: #0f172a;
-  --muted: #475569;
-  --muted-soft: #64748b;
-  --primary: #0284c7;
-  --primary-soft: #e0f2fe;
-  --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --app-bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --panel-border: rgba(226, 232, 240, 0.85);
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-subtle: #64748b;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #eef2ff;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #10b981;
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   body {
-    @apply min-h-screen bg-slate-100 font-sans text-slate-800 antialiased;
-    background-image: radial-gradient(circle at top left, rgba(14, 165, 233, 0.10), transparent 36%),
-      radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.12), transparent 28%),
-      var(--app-bg);
+    @apply min-h-screen bg-slate-50 font-sans text-slate-900 antialiased;
+    background-color: #f8fafc;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 45%),
+      radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.07) 0px, transparent 40%),
+      radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 45%),
+      radial-gradient(rgba(203, 213, 225, 0.45) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+    background-attachment: fixed;
   }
 
   #root {
@@ -39,58 +45,204 @@
   }
 
   ::selection {
-    background: rgba(14, 165, 233, 0.18);
+    background: rgba(99, 102, 241, 0.2);
+    color: #312e81;
+  }
+
+  /* Custom Smooth MNC Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
 }
 
 @layer components {
+  /* MNC Executive Card Surfaces */
   .shell-surface {
-    @apply rounded-2xl border border-slate-200/80 bg-white/80 shadow-soft backdrop-blur-sm;
+    @apply rounded-xl border border-slate-200/90 bg-white shadow-card transition-all duration-200 hover:border-slate-300;
+  }
+
+  .shell-surface-elevated {
+    @apply rounded-xl border border-slate-200/90 bg-white shadow-soft transition-all duration-200 hover:shadow-classic hover:border-brand-200;
+  }
+
+  .glass-panel {
+    @apply rounded-xl border border-slate-200/80 bg-white/85 backdrop-blur-md shadow-soft;
+  }
+
+  .glass-panel-dark {
+    @apply rounded-xl border border-slate-800/80 bg-slate-950/80 backdrop-blur-md shadow-2xl;
   }
 
   .page-header {
-    @apply mb-8 flex flex-col gap-2;
+    @apply mb-6 flex flex-col gap-2 sm:mb-8 sm:flex-row sm:items-center sm:justify-between;
   }
 
   .page-header h1 {
-    @apply text-2xl font-bold tracking-tight text-slate-900;
+    @apply font-display text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl;
   }
 
   .page-header p {
-    @apply text-sm text-slate-500;
+    @apply text-sm font-normal text-slate-500 max-w-2xl leading-relaxed;
   }
 
-  .nav-item {
-    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200;
-  }
-
-  .nav-item-active {
-    @apply bg-sky-50 text-sky-700 shadow-sm ring-1 ring-sky-100;
-  }
-
-  .nav-item-inactive {
-    @apply text-slate-300 hover:bg-slate-800/70 hover:text-white;
-  }
-
-  .status-badge {
-    @apply inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em];
-  }
-
+  /* MNC Enterprise Buttons with luminous elevation */
   .primary-button {
-    @apply inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition-all duration-200 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-brand-500 to-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_4px_rgba(79,70,229,0.25)] ring-1 ring-brand-700/60 transition-all duration-150 hover:from-brand-600 hover:to-brand-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_rgba(79,70,229,0.35)] active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .secondary-button {
-    @apply inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300/90 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-subtle transition-all duration-150 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-400 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
+  .ghost-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-300;
+  }
+
+  /* Form Elements */
   .field-input {
-    @apply mt-1 block w-full rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-sm text-slate-700 shadow-sm transition-all duration-200 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100;
+    @apply mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-normal text-slate-800 shadow-subtle transition-all duration-150 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400;
+  }
+
+  /* Navigation Items */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150;
+  }
+
+  .nav-item-active {
+    @apply bg-gradient-to-r from-brand-500/15 to-transparent text-white font-semibold border-l-2 border-brand-500 shadow-sm;
+  }
+
+  .nav-item-inactive {
+    @apply text-slate-400 hover:bg-slate-900/60 hover:text-slate-200;
+  }
+
+  /* Status Badges */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-wide;
+  }
+
+  /* Executive Table */
+  .classic-table {
+    @apply min-w-full divide-y divide-slate-200 text-left text-sm text-slate-700;
+  }
+
+  .classic-table thead th {
+    @apply bg-slate-50/90 px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200/90;
+  }
+
+  .classic-table tbody td {
+    @apply px-4 py-3.5 whitespace-nowrap text-slate-800;
+  }
+
+  .classic-table tbody tr {
+    @apply border-b border-slate-100/90 transition-colors duration-100 hover:bg-slate-50/80;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Animated Signal Travel along pipeline wires */
+  @keyframes signalTravel {
+    0% {
+      stroke-dashoffset: 100;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Radar Pulse for Broadcast Telemetry */
+  @keyframes radarWave {
+    0% {
+      transform: scale(0.85);
+      opacity: 0.9;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+
+  /* Voice Audio Visualizer Wave */
+  @keyframes soundwave {
+    0%, 100% {
+      height: 4px;
+    }
+    50% {
+      height: 24px;
+    }
+  }
+
+  /* Soft Ambient Floating */
+  @keyframes gentleFloat {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
+  }
+
+  /* Luminous Pulsing Border */
+  @keyframes borderPulse {
+    0%, 100% {
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+    50% {
+      border-color: rgba(99, 102, 241, 0.8);
+    }
+  }
+
+  .animate-signal {
+    stroke-dasharray: 6 6;
+    animation: signalTravel 1.5s linear infinite;
+  }
+
+  .animate-radar-ring {
+    animation: radarWave 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .animate-voice-1 {
+    animation: soundwave 1s ease-in-out infinite;
+  }
+  .animate-voice-2 {
+    animation: soundwave 0.8s ease-in-out 0.2s infinite;
+  }
+  .animate-voice-3 {
+    animation: soundwave 1.2s ease-in-out 0.4s infinite;
+  }
+  .animate-voice-4 {
+    animation: soundwave 0.9s ease-in-out 0.1s infinite;
+  }
+  .animate-voice-5 {
+    animation: soundwave 1.1s ease-in-out 0.3s infinite;
+  }
+
+  .animate-float {
+    animation: gentleFloat 4s ease-in-out infinite;
+  }
+
+  .animate-border-pulse {
+    animation: borderPulse 3s ease-in-out infinite;
   }
 }

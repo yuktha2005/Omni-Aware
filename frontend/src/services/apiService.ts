@@ -137,8 +137,12 @@ export const distributionAPI = {
     apiClient.post<any>(`/campaigns/${campaignId}/schedule`, data),
 
   distribute: (campaignId: number, channels?: string[]): Promise<{ data: any }> => {
-    const params = channels ? { channels } : {};
-    return apiClient.post<any>(`/campaigns/${campaignId}/distribute`, null, { params });
+    let url = `/campaigns/${campaignId}/distribute`;
+    if (channels && channels.length > 0) {
+      const q = channels.map((c) => `channels=${encodeURIComponent(c)}`).join("&");
+      url += `?${q}`;
+    }
+    return apiClient.post<any>(url);
   },
 
   retry: (campaignId: number): Promise<{ data: any }> =>

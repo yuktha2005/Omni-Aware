@@ -17,7 +17,8 @@ import SchedulingPage from "../pages/Scheduling/SchedulingPage";
 import AnalyticsDashboardPage from "../pages/Analytics/AnalyticsDashboardPage";
 import TemplatesPage from "../pages/Templates/TemplatesPage";
 import TeamManagementPage from "../pages/Settings/TeamManagementPage";
-import ComingSoonPage from "../components/ui/ComingSoonPage";
+import SystemFlowPage from "../pages/SystemFlow/SystemFlowPage";
+import ContentLibraryPage from "../pages/ContentLibrary/ContentLibraryPage";
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -49,6 +50,8 @@ const AppRoutes = () => {
       >
         <Route index element={<DashboardHome />} />
         <Route path="dashboard" element={<DashboardHome />} />
+        <Route path="system-flow" element={<SystemFlowPage />} />
+        <Route path="architecture" element={<SystemFlowPage />} />
         <Route path="recipients">
           <Route index element={<RecipientsPage />} />
           <Route path=":id" element={<RecipientDetailPage />} />
@@ -65,7 +68,7 @@ const AppRoutes = () => {
           <Route path=":id/monitor" element={<CampaignMonitoringPage />} />
         </Route>
         <Route path="templates" element={<TemplatesPage />} />
-        <Route path="content-library" element={<ComingSoonPage title="Content Library" description="Content library functionality is not yet implemented." />} />
+        <Route path="content-library" element={<ContentLibraryPage />} />
         <Route path="scheduling" element={<SchedulingPage />} />
         <Route path="analytics" element={<AnalyticsDashboardPage />} />
         <Route path="team" element={<TeamManagementPage />} />

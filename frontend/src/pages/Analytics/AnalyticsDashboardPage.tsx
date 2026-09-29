@@ -150,20 +150,23 @@ const AnalyticsDashboardPage = () => {
                 title="Total Delivered"
                 value={analytics.summary.total_delivered}
                 subtitle={`${analytics.summary.delivery_rate}% Delivery Rate`}
+                accentColor="emerald"
               />
               <StatsCard
                 title="Delivery Rate"
                 value={`${analytics.summary.delivery_rate}%`}
                 subtitle={`${analytics.summary.total_failed} Failed`}
+                accentColor="cyan"
               />
               <StatsCard
-                title="Email/Push Open Rate"
+                title="Email/Push Opens"
                 value={
                   typeof analytics.summary.open_rate === "number"
                     ? `${analytics.summary.open_rate}%`
                     : analytics.summary.open_rate
                 }
                 subtitle={`${analytics.summary.total_opened} Opens`}
+                accentColor="indigo"
               />
               <StatsCard
                 title="Click-Through Rate"
@@ -173,65 +176,152 @@ const AnalyticsDashboardPage = () => {
                     : analytics.summary.click_rate
                 }
                 subtitle={`${analytics.summary.total_clicked} Clicks`}
+                accentColor="violet"
               />
               <StatsCard
                 title="Response Rate"
                 value={`${analytics.summary.response_rate}%`}
                 subtitle={`${analytics.summary.total_responded} Responses`}
+                accentColor="amber"
               />
               <StatsCard
                 title="Audience Sentiment"
                 value={`${analytics.feedback.positive_percentage}% Pos`}
                 subtitle={`${analytics.feedback.total_feedbacks} Feedbacks`}
+                accentColor="emerald"
               />
             </div>
           )}
 
           {/* Channel Performance Breakdown */}
           {analytics && (
-            <Card className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-slate-900">Multi-Channel Distribution Performance</h2>
-                <span className="text-xs text-slate-400">Respects recipient consent & channel capability</span>
+            <div className="relative overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-card transition-all duration-200 hover:shadow-soft">
+              {/* Top Accent Micro-Line */}
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-cyan-500 to-indigo-600" />
+
+              <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h2 className="font-display text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                    Multi-Channel Distribution Performance
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </h2>
+                  <p className="text-xs text-slate-500">Telemetry aggregated across verified carrier and protocol gateways</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 shadow-subtle">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+                  Consent & Policy Enforced
+                </span>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+                <table className="classic-table">
+                  <thead>
                     <tr>
-                      <th className="px-4 py-3">Channel</th>
-                      <th className="px-4 py-3">Sent</th>
-                      <th className="px-4 py-3">Delivered</th>
-                      <th className="px-4 py-3">Delivery Rate</th>
-                      <th className="px-4 py-3">Open Rate</th>
-                      <th className="px-4 py-3">Click Rate</th>
-                      <th className="px-4 py-3">Response Rate</th>
+                      <th>Gateway Channel</th>
+                      <th>Sent</th>
+                      <th>Delivered</th>
+                      <th>Delivery Rate</th>
+                      <th>Open Rate</th>
+                      <th>Click Rate</th>
+                      <th>Citizen Response</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {analytics.channels.map((ch) => (
-                      <tr key={ch.channel} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-3 font-semibold text-slate-900">{ch.channel}</td>
-                        <td className="px-4 py-3 text-slate-700">{ch.sent}</td>
-                        <td className="px-4 py-3 text-slate-700">{ch.delivered}</td>
-                        <td className="px-4 py-3 font-medium text-emerald-600">
-                          {ch.delivery_rate}%
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">
-                          {typeof ch.open_rate === "number" ? `${ch.open_rate}%` : ch.open_rate}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">
-                          {typeof ch.click_rate === "number" ? `${ch.click_rate}%` : ch.click_rate}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">
-                          {ch.response_rate}%
-                        </td>
-                      </tr>
-                    ))}
+                    {analytics.channels.map((ch) => {
+                      const isEmail = ch.channel.toLowerCase().includes("email");
+                      const isWeb = ch.channel.toLowerCase().includes("web");
+                      const isSMS = ch.channel.toLowerCase().includes("sms");
+                      const isWhatsApp = ch.channel.toLowerCase().includes("whatsapp");
+
+                      const delivRate = Number(ch.delivery_rate) || 0;
+
+                      return (
+                        <tr key={ch.channel} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className={`flex h-8 w-8 items-center justify-center rounded-lg border shadow-subtle ${
+                                  isEmail
+                                    ? "bg-brand-50 border-brand-200 text-brand-600"
+                                    : isWeb
+                                    ? "bg-cyan-50 border-cyan-200 text-cyan-600"
+                                    : isWhatsApp
+                                    ? "bg-emerald-50 border-emerald-200 text-emerald-600"
+                                    : "bg-amber-50 border-amber-200 text-amber-600"
+                                }`}
+                              >
+                                {isEmail ? (
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                  </svg>
+                                ) : isWeb ? (
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div>
+                                <span className="font-extrabold text-slate-900 block leading-tight">
+                                  {ch.channel}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                                  {isEmail ? "Gov-SMTP Relay" : isWeb ? "Public Web Portal" : isSMS ? "TRAI DLT" : "Carrier API"}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 font-bold text-slate-800">{ch.sent.toLocaleString()}</td>
+                          <td className="px-4 py-3.5 font-bold text-slate-900">{ch.delivered.toLocaleString()}</td>
+                          <td className="px-4 py-3.5">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-extrabold border ${
+                                delivRate >= 80
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm"
+                                  : delivRate > 0
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-slate-100 text-slate-500 border-slate-200"
+                              }`}
+                            >
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  delivRate >= 80 ? "bg-emerald-500" : delivRate > 0 ? "bg-amber-500" : "bg-slate-400"
+                                }`}
+                              />
+                              {delivRate}%
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            {typeof ch.open_rate === "number" ? (
+                              <span className="font-bold text-slate-700">{ch.open_rate}%</span>
+                            ) : (
+                              <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                                {ch.open_rate}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            {typeof ch.click_rate === "number" ? (
+                              <span className="font-bold text-slate-700">{ch.click_rate}%</span>
+                            ) : (
+                              <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                                {ch.click_rate}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <span className="font-bold text-slate-800">{ch.response_rate}%</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-            </Card>
+            </div>
           )}
 
           {/* Language & Audience Breakdown Grid */}
