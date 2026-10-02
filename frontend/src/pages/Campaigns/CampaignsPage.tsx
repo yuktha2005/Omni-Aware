@@ -5,12 +5,14 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
 import { useToast } from "../../hooks/useToast";
+import { useAuth } from "../../contexts/AuthContext";
 import { ToastManager } from "../../components/ui/Toast";
 import ErrorState from "../../components/ui/ErrorState";
 import LoadingSkeleton from "../../components/ui/LoadingSkeleton";
 import type { Campaign } from "../../types/campaign";
 
 const CampaignsPage = () => {
+  const { isCampaignManager } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -54,6 +56,34 @@ const CampaignsPage = () => {
     }
   };
 
+  const handleApprove = async (campaignId: number) => {
+    try {
+      setActionLoadingId(campaignId);
+      await campaignAPI.approve(campaignId, "Approved from Campaign Management");
+      showToast("success", `Campaign #${campaignId} approved! Ready to broadcast.`);
+      fetchCampaigns();
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || "Failed to approve campaign";
+      showToast("error", msg);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleSubmitApproval = async (campaignId: number) => {
+    try {
+      setActionLoadingId(campaignId);
+      await campaignAPI.submitApproval(campaignId, "Submitted from Campaign Management");
+      showToast("success", `Campaign #${campaignId} submitted for management review.`);
+      fetchCampaigns();
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || "Failed to submit for approval";
+      showToast("error", msg);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const s = status.toLowerCase();
     switch (s) {
@@ -61,11 +91,17 @@ const CampaignsPage = () => {
         return <Badge variant="success">Completed</Badge>;
       case "running":
         return <Badge variant="info">Running</Badge>;
+      case "approved":
+        return <Badge variant="success">Approved</Badge>;
+      case "pending_approval":
+        return <Badge variant="warning" className="animate-pulse">Pending Review</Badge>;
       case "scheduled":
       case "queued":
         return <Badge variant="warning">{status.toUpperCase()}</Badge>;
       case "failed":
         return <Badge variant="danger">Failed</Badge>;
+      case "rejected":
+        return <Badge variant="danger">Needs Revision</Badge>;
       case "cancelled":
         return <Badge variant="default">Cancelled</Badge>;
       default:
@@ -92,7 +128,16 @@ const CampaignsPage = () => {
             Create, schedule, broadcast, and monitor multilingual awareness campaigns.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {isCampaignManager && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/approvals")}
+              className="border-amber-500/40 text-amber-700 hover:bg-amber-50"
+            >
+              ⏳ Approval Queue
+            </Button>
+          )}
           <Button variant="outline" onClick={fetchCampaigns}>
             Refresh
           </Button>
@@ -101,6 +146,7 @@ const CampaignsPage = () => {
           </Button>
         </div>
       </div>
+
 
       {/* Filters & Search */}
       <Card className="p-4">
@@ -199,15 +245,71 @@ const CampaignsPage = () => {
                           >
                             Live Monitor
                           </Button>
+                        ) : c.status.toLowerCase() === "pending_approval" ? (
+                          isCampaignManager ? (
+                            <>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                loading={actionLoadingId === c.id}
+                                onClick={() => handleApprove(c.id)}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                              >
+                                ✓ Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate("/approvals")}
+                                className="border-amber-500/40 text-amber-600 hover:bg-amber-50"
+                              >
+                                Review
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="inline-flex items-center rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                              ⏳ In Review
+                            </span>
+                          )
+                        ) : c.status.toLowerCase() === "approved" ? (
+                          isCampaignManager ? (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              loading={actionLoadingId === c.id}
+                              onClick={() => handleQuickDistribute(c.id)}
+                              className="bg-indigo-600 hover:bg-indigo-500"
+                            >
+                              🚀 Distribute
+                            </Button>
+                          ) : (
+                            <span className="inline-flex items-center rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                              ✓ Approved
+                            </span>
+                          )
                         ) : c.status.toLowerCase() === "draft" ? (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            loading={actionLoadingId === c.id}
-                            onClick={() => handleQuickDistribute(c.id)}
-                          >
-                            Distribute
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              loading={actionLoadingId === c.id}
+                              onClick={() => handleSubmitApproval(c.id)}
+                              className="border-indigo-500/30 text-indigo-700 hover:bg-indigo-50"
+                            >
+                              Submit Review
+                            </Button>
+                            {isCampaignManager && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                loading={actionLoadingId === c.id}
+                                onClick={() => handleApprove(c.id)}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                              >
+                                Approve
+                              </Button>
+                            )}
+                          </>
                         ) : null}
 
                         <Button
@@ -225,6 +327,7 @@ const CampaignsPage = () => {
                           Monitor
                         </Button>
                       </div>
+
                     </td>
                   </tr>
                 ))}

@@ -37,3 +37,16 @@ export interface UpdateRoleRequest {
   role: UserRole;
   is_active?: boolean;
 }
+
+export interface AuditLog {
+  id: number;
+  action: string;
+  actor_id?: number;
+  actor_email?: string;
+  actor_role?: string;
+  target_resource_type?: string;
+  target_resource_id?: string;
+  details?: Record<string, unknown>;
+  ip_address?: string;
+  created_at: string;
+}

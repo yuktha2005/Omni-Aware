@@ -32,6 +32,10 @@ from api.master import router as master_router
 from api.ai import router as ai_router
 from api.distribution import router as distribution_router
 from api.analytics import router as analytics_router
+from api.emergency import router as emergency_router
+from api.fact_verification import router as fact_verification_router
+from api.translation_evaluation import router as translation_evaluation_router
+from api.quizzes import router as quizzes_router
 from database.connection import Base, engine, apply_schema_migrations
 import models.admin
 import models.audience
@@ -39,6 +43,10 @@ import models.master
 import models.recipient
 import models.segment
 import models.campaign
+import models.emergency
+import models.fact_verification
+import models.quiz
+import models.audit
 
 logging.basicConfig(
     level=logging.INFO,
@@ -129,6 +137,10 @@ app.include_router(master_router)
 app.include_router(ai_router)
 app.include_router(distribution_router)
 app.include_router(analytics_router)
+app.include_router(emergency_router)
+app.include_router(fact_verification_router)
+app.include_router(translation_evaluation_router)
+app.include_router(quizzes_router)
 
 
 # ---------------------------------------------------------------------------

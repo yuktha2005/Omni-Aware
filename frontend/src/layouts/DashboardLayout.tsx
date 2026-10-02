@@ -16,6 +16,8 @@ const pagetitles: Record<string, string> = {
   "/templates": "Templates",
   "/content-library": "Content Library",
   "/scheduling": "Campaign Scheduling",
+  "/approvals": "Campaign Approval Center",
+  "/campaigns/approvals": "Campaign Approval Center",
   "/analytics": "Engagement Analytics",
   "/system-flow": "System Architecture & Flow",
   "/architecture": "System Architecture & Flow",

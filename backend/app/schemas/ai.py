@@ -246,6 +246,46 @@ class CampaignDetailResponse(CampaignResponse):
     contents: List[ProcessedContentItem] = []
 
 
+class CampaignApprovalRequest(BaseModel):
+    notes: Optional[str] = None
+    reason: Optional[str] = None
+    scheduled_at: Optional[str] = None
+    scheduled_timezone: Optional[str] = "Asia/Kolkata"
+    selected_channels: Optional[List[str]] = None
+    target_segment_id: Optional[int] = None
+
+
+class CampaignApprovalResponse(BaseModel):
+    campaign_id: int
+    status: str
+    message: str
+    updated_at: Optional[str] = None
+
+
+class CampaignApprovalItem(BaseModel):
+    id: int
+    title: str
+    purpose: str
+    target_audience: Optional[str]
+    key_information: str
+    desired_language: str
+    desired_tone: str
+    communication_channel: str
+    status: str
+    created_at: Optional[str]
+    created_by: Optional[str] = None
+    scheduled_at: Optional[str] = None
+    scheduled_timezone: Optional[str] = None
+    selected_channels: Optional[List[str]] = None
+    target_segment_id: Optional[int] = None
+    content_count: int = 0
+    contents: List[ProcessedContentItem] = []
+    fact_verification_summary: Dict[str, Any] = {}
+    translation_quality_summary: Dict[str, Any] = {}
+
+
+
+
 # ---------------------------------------------------------
 # Bonus Feature Schemas (Voice, QR, Poster, Helpline)
 # ---------------------------------------------------------

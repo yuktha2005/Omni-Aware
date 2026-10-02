@@ -8,6 +8,7 @@ import StatsCard from "../../components/ui/StatsCard";
 import { useToast } from "../../hooks/useToast";
 import { ToastManager } from "../../components/ui/Toast";
 import LoadingSkeleton from "../../components/ui/LoadingSkeleton";
+import { UnderstandingAnalyticsCard } from "../../components/campaigns/UnderstandingAnalyticsCard";
 import type { CampaignAnalytics, PlatformOverview, FeedbackItem } from "../../types/analytics";
 import type { Campaign } from "../../types/campaign";
 
@@ -495,6 +496,13 @@ const AnalyticsDashboardPage = () => {
                 </table>
               </div>
             </Card>
+          )}
+
+          {/* Citizen Understanding Score & Comprehension Analytics */}
+          {selectedCampaignId && (
+            <UnderstandingAnalyticsCard
+              campaignId={parseInt(selectedCampaignId, 10)}
+            />
           )}
         </>
       )}

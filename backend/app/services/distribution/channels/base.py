@@ -14,6 +14,7 @@ class ChannelSendResult:
     error_message: Optional[str] = None
     sent_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
 
 
 class BaseChannelProvider(ABC):

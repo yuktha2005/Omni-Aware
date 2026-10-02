@@ -63,14 +63,18 @@ class QualityCheckService:
             deductions += 10.0
             completeness_score -= 20.0
 
-        # 2. Readability & Clarity (using textstat)
+        # 2. Readability & Clarity (using textstat for English, native baseline for Indic)
         combined_text = f"{title_clean}. {body_clean}"
-        try:
-            flesch_score = textstat.flesch_reading_ease(combined_text)
-            flesch_grade = textstat.flesch_kincaid_grade(combined_text)
-        except Exception:
-            flesch_score = 70.0
-            flesch_grade = 8.0
+        if language and language.strip().lower() != "english":
+            flesch_score = 78.0
+            flesch_grade = 6.0
+        else:
+            try:
+                flesch_score = textstat.flesch_reading_ease(combined_text)
+                flesch_grade = textstat.flesch_kincaid_grade(combined_text)
+            except Exception:
+                flesch_score = 70.0
+                flesch_grade = 8.0
 
         if flesch_score >= 80:
             reading_ease = "Very Easy to Read"

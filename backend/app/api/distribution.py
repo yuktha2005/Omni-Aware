@@ -15,7 +15,8 @@ from schemas.distribution import (
 )
 from services.distribution.distribution_engine import distribution_engine
 from services.distribution.channel_manager import channel_manager
-from services.auth_service import get_current_admin
+from services.auth_service import get_current_admin, require_campaign_manager
+from services.audit_service import log_audit_event
 
 router = APIRouter(
     tags=["Multi-Channel Distribution"]
@@ -30,8 +31,9 @@ def schedule_campaign(
     campaign_id: int,
     request: ScheduleCampaignRequest,
     db: Session = Depends(get_db),
-    current_admin: Admin = Depends(get_current_admin)
+    current_admin: Admin = Depends(require_campaign_manager)
 ):
+
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(
@@ -45,19 +47,39 @@ def schedule_campaign(
     if request.target_segment_id:
         campaign.target_segment_id = request.target_segment_id
 
-    # If scheduled in future, mark SCHEDULED; otherwise mark QUEUED
-    # Handle both timezone-naive and timezone-aware scheduled_at values
-    now_utc = datetime.now(timezone.utc)
-    if request.scheduled_at:
-        sa = request.scheduled_at
-        # Make comparison safe: if sa is naive, compare against utcnow() naive
-        if sa.tzinfo is not None:
-            is_future = sa > now_utc
-        else:
-            is_future = sa > now_utc.replace(tzinfo=None)
-        campaign.status = "scheduled" if is_future else "queued"
+    # If role is communication_team, it enters pending_approval state for admin/manager sign-off
+    if current_admin.role == "communication_team":
+        campaign.status = "pending_approval"
+        msg = f"Campaign #{campaign.id} schedule draft submitted for management approval."
+        log_audit_event(
+            db=db,
+            action="CAMPAIGN_SCHEDULE_DRAFT_SUBMITTED",
+            admin=current_admin,
+            resource_type="campaign",
+            resource_id=str(campaign_id),
+            details={"scheduled_at": str(request.scheduled_at), "channels": request.selected_channels}
+        )
     else:
-        campaign.status = "queued"
+        # If scheduled in future, mark SCHEDULED; otherwise mark QUEUED
+        now_utc = datetime.now(timezone.utc)
+        if request.scheduled_at:
+            sa = request.scheduled_at
+            if sa.tzinfo is not None:
+                is_future = sa > now_utc
+            else:
+                is_future = sa > now_utc.replace(tzinfo=None)
+            campaign.status = "scheduled" if is_future else "queued"
+        else:
+            campaign.status = "queued"
+        msg = f"Campaign #{campaign.id} is now {campaign.status}."
+        log_audit_event(
+            db=db,
+            action="CAMPAIGN_SCHEDULED",
+            admin=current_admin,
+            resource_type="campaign",
+            resource_id=str(campaign_id),
+            details={"status": campaign.status, "scheduled_at": str(request.scheduled_at)}
+        )
 
     db.commit()
     db.refresh(campaign)
@@ -69,8 +91,9 @@ def schedule_campaign(
         "scheduled_timezone": campaign.scheduled_timezone,
         "selected_channels": campaign.selected_channels,
         "target_segment_id": campaign.target_segment_id,
-        "message": f"Campaign #{campaign.id} is now {campaign.status}."
+        "message": msg
     }
+
 
 
 # =========================================================
@@ -83,7 +106,7 @@ def trigger_distribution(
     sync_mode: bool = Query(False, description="Run synchronously if True (useful for tests)"),
     channels: Optional[List[str]] = Query(None),
     db: Session = Depends(get_db),
-    current_admin: Admin = Depends(get_current_admin)
+    current_admin: Admin = Depends(require_campaign_manager)
 ):
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
@@ -93,6 +116,15 @@ def trigger_distribution(
         )
 
     selected_channels = channels or campaign.selected_channels or ["email", "sms"]
+
+    log_audit_event(
+        db=db,
+        action="CAMPAIGN_DISTRIBUTION_TRIGGERED",
+        admin=current_admin,
+        resource_type="campaign",
+        resource_id=str(campaign_id),
+        details={"channels": selected_channels, "sync_mode": sync_mode}
+    )
 
     if sync_mode:
         # Run synchronously (blocking until completion)
@@ -135,7 +167,7 @@ def trigger_distribution(
 def retry_campaign_failures(
     campaign_id: int,
     db: Session = Depends(get_db),
-    current_admin: Admin = Depends(get_current_admin)
+    current_admin: Admin = Depends(require_campaign_manager)
 ):
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
@@ -143,6 +175,14 @@ def retry_campaign_failures(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaign with ID {campaign_id} not found."
         )
+
+    log_audit_event(
+        db=db,
+        action="CAMPAIGN_RETRY_TRIGGERED",
+        admin=current_admin,
+        resource_type="campaign",
+        resource_id=str(campaign_id)
+    )
 
     res = distribution_engine.retry_failed_deliveries(campaign_id=campaign_id, db=db)
     return res
@@ -155,7 +195,7 @@ def retry_campaign_failures(
 def cancel_campaign(
     campaign_id: int,
     db: Session = Depends(get_db),
-    current_admin: Admin = Depends(get_current_admin)
+    current_admin: Admin = Depends(require_campaign_manager)
 ):
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
@@ -178,6 +218,15 @@ def cancel_campaign(
     ).update({"status": "CANCELLED"})
 
     db.commit()
+
+    log_audit_event(
+        db=db,
+        action="CAMPAIGN_CANCELLED",
+        admin=current_admin,
+        resource_type="campaign",
+        resource_id=str(campaign_id)
+    )
+
     return {"message": f"Campaign #{campaign_id} and pending deliveries have been cancelled."}
 
 

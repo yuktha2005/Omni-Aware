@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import LoginPage from "../pages/Login/LoginPage";
 import RegisterPage from "../pages/Auth/RegisterPage";
+import AccessDeniedPage from "../pages/Auth/AccessDeniedPage";
+import RequireRole from "../components/auth/RequireRole";
 import DashboardLayout from "../layouts/DashboardLayout";
 import DashboardHome from "../pages/Dashboard/DashboardHome";
 import RecipientsPage from "../pages/Recipients/RecipientsPage";
@@ -19,6 +21,8 @@ import TemplatesPage from "../pages/Templates/TemplatesPage";
 import TeamManagementPage from "../pages/Settings/TeamManagementPage";
 import SystemFlowPage from "../pages/SystemFlow/SystemFlowPage";
 import ContentLibraryPage from "../pages/ContentLibrary/ContentLibraryPage";
+import CitizenQuizPage from "../pages/Quiz/CitizenQuizPage";
+import CampaignApprovalsPage from "../pages/Approvals/CampaignApprovalsPage";
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -40,6 +44,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/quiz/:quizId" element={<CitizenQuizPage />} />
       <Route
         path="/*"
         element={
@@ -50,6 +55,7 @@ const AppRoutes = () => {
       >
         <Route index element={<DashboardHome />} />
         <Route path="dashboard" element={<DashboardHome />} />
+        <Route path="access-denied" element={<AccessDeniedPage />} />
         <Route path="system-flow" element={<SystemFlowPage />} />
         <Route path="architecture" element={<SystemFlowPage />} />
         <Route path="recipients">
@@ -62,17 +68,45 @@ const AppRoutes = () => {
         <Route path="master-data" element={<MasterDataPage />} />
         <Route path="campaigns">
           <Route index element={<CampaignsPage />} />
+          <Route path="approvals" element={
+            <RequireRole allowedRoles={["admin", "campaign_manager"]}>
+              <CampaignApprovalsPage />
+            </RequireRole>
+          } />
           <Route path="wizard" element={<CampaignWizardPage />} />
           <Route path="new" element={<CampaignWizardPage />} />
           <Route path="monitoring/:id" element={<CampaignMonitoringPage />} />
           <Route path=":id/monitor" element={<CampaignMonitoringPage />} />
         </Route>
+        <Route
+          path="approvals"
+          element={
+            <RequireRole allowedRoles={["admin", "campaign_manager"]}>
+              <CampaignApprovalsPage />
+            </RequireRole>
+          }
+        />
         <Route path="templates" element={<TemplatesPage />} />
+
         <Route path="content-library" element={<ContentLibraryPage />} />
         <Route path="scheduling" element={<SchedulingPage />} />
         <Route path="analytics" element={<AnalyticsDashboardPage />} />
-        <Route path="team" element={<TeamManagementPage />} />
-        <Route path="settings" element={<TeamManagementPage />} />
+        <Route
+          path="team"
+          element={
+            <RequireRole allowedRoles={["admin"]}>
+              <TeamManagementPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <RequireRole allowedRoles={["admin"]}>
+              <TeamManagementPage />
+            </RequireRole>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

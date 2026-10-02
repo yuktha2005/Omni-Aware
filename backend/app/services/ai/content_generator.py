@@ -140,6 +140,17 @@ class ContentGeneratorService:
         if len(short_version) > 280:
             short_version = short_version[:277] + "..."
 
+        # If a non-English language was requested, translate the structured content directly
+        if desired_language and desired_language.strip().lower() != "english":
+            try:
+                from services.ai.translation_service import translation_service
+                subject = translation_service.translate_text(subject, "English", desired_language)
+                message_body = translation_service.translate_text(message_body, "English", desired_language)
+                short_version = translation_service.translate_text(short_version, "English", desired_language)
+                cta = translation_service.translate_text(cta, "English", desired_language)
+            except Exception as trans_err:
+                logger.warning(f"Language localization of generated content notice: {trans_err}")
+
         return {
             "message_title": subject,
             "message_body": message_body,
@@ -148,7 +159,7 @@ class ContentGeneratorService:
             "desired_language": desired_language,
             "desired_tone": desired_tone,
             "communication_channel": communication_channel,
-            "provider": "Open-Source Local NLP Generator"
+            "provider": "OmniAware Multilingual NLP Generator"
         }
 
     def _generate_with_gemini(

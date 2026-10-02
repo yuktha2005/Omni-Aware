@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { campaignAPI, distributionAPI } from "../../services/apiService";
+import { campaignAPI, distributionAPI, factVerificationAPI, translationEvaluationAPI } from "../../services/apiService";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import Badge from "../../components/ui/Badge";
 import { useToast } from "../../hooks/useToast";
+import { useAuth } from "../../contexts/AuthContext";
 import { ToastManager } from "../../components/ui/Toast";
 import type { CampaignContentItem } from "../../types/campaign";
+import type { FactVerificationResult, TranslationEvaluationResult } from "../../types/omni2";
+import { FactVerificationCard } from "../../components/campaigns/FactVerificationCard";
+import { TranslationEvaluatorCard } from "../../components/campaigns/TranslationEvaluatorCard";
 
 const ALL_LANGUAGES = ["English", "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam"];
 const ALL_ROLES = ["Student", "Teacher", "Healthcare Worker", "General Public", "Farmer"];
@@ -21,6 +24,7 @@ const ALL_CHANNELS = [
 const CampaignWizardPage = () => {
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
+  const { isCampaignManager } = useAuth();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -39,10 +43,14 @@ const CampaignWizardPage = () => {
   });
 
   // Step 2: AI Generated Variations
+  // Step 2: AI Generated Variations & Safety Checks
   const [targetLanguages, setTargetLanguages] = useState<string[]>(["English", "Hindi", "Tamil"]);
   const [targetRoles, setTargetRoles] = useState<string[]>(["Student", "General Public"]);
   const [generatedContents, setGeneratedContents] = useState<CampaignContentItem[]>([]);
   const [createdCampaignId, setCreatedCampaignId] = useState<number | null>(null);
+  const [factVerification, setFactVerification] = useState<FactVerificationResult | null>(null);
+  const [evaluations, setEvaluations] = useState<TranslationEvaluationResult[]>([]);
+  const [step2SubTab, setStep2SubTab] = useState<"matrix" | "factCheck" | "evaluations">("matrix");
 
   // Step 3: Channels & Audience
   const [selectedChannels, setSelectedChannels] = useState<string[]>(["email", "sms", "whatsapp"]);
@@ -62,7 +70,7 @@ const CampaignWizardPage = () => {
     try {
       setLoading(true);
       // Run AI Pipeline — show processing steps with visual feedback
-      setAiProcessingStep("🔍 Analyzing campaign objectives...");
+      setAiProcessingStep("🔍 Analyzing campaign objectives & extracting facts...");
       await new Promise((r) => setTimeout(r, 400));
       setAiProcessingStep("✍️ Generating multilingual content variants...");
       // Run AI Pipeline
@@ -79,17 +87,56 @@ const CampaignWizardPage = () => {
         audience_roles: targetRoles,
         save_to_db: true,
       });
-      setAiProcessingStep("🌍 Translating into target languages...");
-      await new Promise((r) => setTimeout(r, 300));
-      setAiProcessingStep("🧠 Running quality & compliance checks...");
-      await new Promise((r) => setTimeout(r, 300));
 
       const resData = pipelineRes.data;
-      setGeneratedContents(resData.processed_contents || []);
-      if (resData.campaign_id) {
-        setCreatedCampaignId(resData.campaign_id);
+      const contents = resData.processed_contents || [];
+      setGeneratedContents(contents);
+      const campId = resData.campaign_id;
+      if (campId) {
+        setCreatedCampaignId(campId);
       }
-      showToast("success", `Generated ${resData.total_generated || 0} multilingual campaign variations!`);
+
+      setAiProcessingStep("🛡️ Corroborating claims with official NDMA/MoHFW trusted sources...");
+      // Run Fact Verification
+      try {
+        const factRes = await factVerificationAPI.extractAndVerify({
+          title: formData.title,
+          body: formData.keyInformation,
+          key_information: formData.optionalInstructions,
+          campaign_id: campId,
+        });
+        setFactVerification(factRes.data);
+      } catch (fErr) {
+        console.warn("Fact verification notice:", fErr);
+      }
+
+      setAiProcessingStep("🌐 Evaluating multilingual translation preservation & back-translation...");
+      // Run Translation Evaluations for generated contents
+      try {
+        const evalList: TranslationEvaluationResult[] = [];
+        const sourceItem = contents.find((c: any) => c.language.toLowerCase() === "english") || contents[0];
+        const sourceText = sourceItem ? `${sourceItem.message_title}. ${sourceItem.message_body}` : `${formData.title}. ${formData.keyInformation}`;
+
+        for (const item of contents) {
+          if (item.language.toLowerCase() !== "english") {
+            const evalRes = await translationEvaluationAPI.evaluate({
+              source_text: sourceText,
+              translated_text: `${item.message_title}. ${item.message_body}`,
+              source_language: "English",
+              target_language: item.language,
+              is_emergency_content: formData.purpose.toLowerCase().includes("emergency") || formData.purpose.toLowerCase().includes("flood"),
+              content_id: item.db_id,
+              campaign_id: campId,
+            });
+            evalList.push(evalRes.data);
+          }
+        }
+        setEvaluations(evalList);
+      } catch (tErr) {
+        console.warn("Translation evaluation notice:", tErr);
+      }
+
+      showToast("success", `Generated ${resData.total_generated || 0} variations with Fact Verification and Quality Evaluation!`);
       setAiProcessingStep("");
       setStep(2);
     } catch (err: any) {
@@ -124,6 +171,27 @@ const CampaignWizardPage = () => {
       showToast("error", "No campaign ID found to dispatch.");
       return;
     }
+
+    if (!isCampaignManager) {
+      // Communication Team submits campaign draft with scheduling preferences for approval
+      try {
+        setLoading(true);
+        await campaignAPI.submitApproval(createdCampaignId, {
+          notes: "Submitted via AI Campaign Wizard",
+          scheduled_at: scheduleType === "scheduled" ? (scheduledAt || new Date().toISOString()) : undefined,
+          scheduled_timezone: timezone,
+          selected_channels: selectedChannels.length > 0 ? selectedChannels : ["email", "sms"],
+        });
+        showToast("success", "Campaign draft & schedule submitted for Admin / Manager approval!");
+        navigate("/campaigns");
+      } catch (err: any) {
+        showToast("error", err.response?.data?.detail || "Failed to submit draft for approval");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
 
     if (selectedChannels.length === 0) {
       showToast("error", "Please select at least one distribution channel.");
@@ -401,50 +469,125 @@ const CampaignWizardPage = () => {
         </Card>
       )}
 
-      {/* STEP 2: Review AI Generated Multilingual Content */}
+      {/* STEP 2: Review AI Generated Multilingual Content, Fact Verification & Translation Quality */}
       {step === 2 && (
         <Card className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">2. Validated Multilingual Content Matrix</h2>
+              <h2 className="text-lg font-semibold text-slate-900">2. Validated Multilingual Content & Fact Verification</h2>
               <p className="text-xs text-slate-500">
-                {generatedContents.length} variations generated with sentiment, tone, and compliance verification.
+                {generatedContents.length} variations generated with NDMA/MoHFW fact verification and translation evaluation.
               </p>
             </div>
-            <Badge variant="success">All Safety Checks Passed</Badge>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setStep2SubTab("matrix")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  step2SubTab === "matrix"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                📝 Content Matrix ({generatedContents.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep2SubTab("factCheck")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                  step2SubTab === "factCheck"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                <span>🛡️ Fact Check</span>
+                {factVerification && (
+                  <span className="bg-white text-indigo-700 rounded-full px-1.5 py-0.2 text-[10px]">
+                    {factVerification.total_claims}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep2SubTab("evaluations")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                  step2SubTab === "evaluations"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                <span>🌐 Translation QA</span>
+                {evaluations.length > 0 && (
+                  <span className="bg-white text-indigo-700 rounded-full px-1.5 py-0.2 text-[10px]">
+                    {evaluations.length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {generatedContents.map((item, idx) => (
-              <div
-                key={idx}
-                className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-2 text-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-indigo-700">{item.language}</span>
-                  <span className="text-xs font-medium text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
-                    {item.audience_role}
-                  </span>
+          {/* Sub-tab 1: Content Matrix */}
+          {step2SubTab === "matrix" && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {generatedContents.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-2 text-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-indigo-700">{item.language}</span>
+                    <span className="text-xs font-medium text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      {item.audience_role}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-slate-900">{item.message_title}</h3>
+                  <p className="text-xs text-slate-600 line-clamp-3 whitespace-pre-line">{item.message_body}</p>
+                  {item.call_to_action && (
+                    <div className="text-xs font-semibold text-primary-600">Action: {item.call_to_action}</div>
+                  )}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60 text-xs">
+                    <span className="text-slate-500">
+                      Score: <strong>{item.quality_score || 95}%</strong>
+                    </span>
+                    <span>•</span>
+                    <span className="text-slate-500">
+                      Tone: <strong>{item.detected_tone || "Reassuring"}</strong>
+                    </span>
+                    <span>•</span>
+                    <span className="text-emerald-600 font-medium">Compliance: 100%</span>
+                  </div>
                 </div>
-                <h3 className="font-bold text-slate-900">{item.message_title}</h3>
-                <p className="text-xs text-slate-600 line-clamp-3 whitespace-pre-line">{item.message_body}</p>
-                {item.call_to_action && (
-                  <div className="text-xs font-semibold text-primary-600">Action: {item.call_to_action}</div>
-                )}
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60 text-xs">
-                  <span className="text-slate-500">
-                    Score: <strong>{item.quality_score || 95}%</strong>
-                  </span>
-                  <span>•</span>
-                  <span className="text-slate-500">
-                    Tone: <strong>{item.detected_tone || "Reassuring"}</strong>
-                  </span>
-                  <span>•</span>
-                  <span className="text-emerald-600 font-medium">Compliance: 100%</span>
+              ))}
+            </div>
+          )}
+
+          {/* Sub-tab 2: Fact Verification Engine */}
+          {step2SubTab === "factCheck" && (
+            <div>
+              {factVerification ? (
+                <FactVerificationCard verificationResult={factVerification} />
+              ) : (
+                <div className="p-8 text-center text-gray-500 bg-slate-50 rounded-xl border">
+                  No claims available for verification.
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
+
+          {/* Sub-tab 3: Translation Quality Evaluator */}
+          {step2SubTab === "evaluations" && (
+            <div className="space-y-6">
+              {evaluations.length > 0 ? (
+                evaluations.map((ev, idx) => (
+                  <TranslationEvaluatorCard key={idx} evaluation={ev} />
+                ))
+              ) : (
+                <div className="p-8 text-center text-gray-500 bg-slate-50 rounded-xl border">
+                  Single language campaign — No regional translations to evaluate.
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-between pt-4 border-t border-slate-100">
             <Button variant="outline" onClick={() => setStep(1)}>
@@ -588,6 +731,18 @@ const CampaignWizardPage = () => {
                 <strong>Languages:</strong> {targetLanguages.join(", ")}
               </div>
             </div>
+
+            {!isCampaignManager && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-start gap-2">
+                <span className="text-base">📢</span>
+                <div>
+                  <strong className="font-semibold">Communication Team Clearance:</strong>
+                  <p className="mt-0.5 text-amber-700">
+                    Your drafts, translations, and AI fact checks are saved. Final live dispatch requires Campaign Manager or Admin authorization.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-between pt-4 border-t border-slate-100">
@@ -595,7 +750,11 @@ const CampaignWizardPage = () => {
               ← Back to Channels
             </Button>
             <Button variant="primary" loading={loading} onClick={handleFinalLaunch}>
-              {scheduleType === "immediate" ? "🚀 Launch Campaign Now" : "📅 Confirm & Schedule"}
+              {!isCampaignManager
+                ? "💾 Save Draft & Submit for Review"
+                : scheduleType === "immediate"
+                ? "🚀 Launch Campaign Now"
+                : "📅 Confirm & Schedule"}
             </Button>
           </div>
         </Card>

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from database.connection import get_db
 from models.admin import Admin
+from models.audit import AuditLog
 from schemas.auth import (
     LoginRequest,
     RegisterRequest,
@@ -19,6 +20,7 @@ from services.auth_service import (
     get_current_admin,
     require_admin,
 )
+from services.audit_service import log_audit_event
 
 router = APIRouter(
     prefix="/auth",
@@ -157,6 +159,7 @@ def update_user_role(
             detail="User not found"
         )
 
+    old_role = user.role
     user.role = req.role.strip().lower()
     if req.is_active is not None:
         user.is_active = req.is_active
@@ -164,4 +167,76 @@ def update_user_role(
 
     db.commit()
     db.refresh(user)
+
+    log_audit_event(
+        db=db,
+        action="ROLE_CHANGED",
+        admin=current_user,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"old_role": old_role, "new_role": user.role, "is_active": user.is_active}
+    )
+
     return UserResponse.model_validate(user)
+
+
+@router.post("/users/{user_id}/toggle-status", response_model=UserResponse)
+def toggle_user_active_status(
+    user_id: int,
+    current_user: Admin = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    user = db.query(Admin).filter(Admin.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Administrators cannot deactivate their own active session."
+        )
+
+    user.is_active = not user.is_active
+    user.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(user)
+
+    log_audit_event(
+        db=db,
+        action="USER_STATUS_TOGGLED",
+        admin=current_user,
+        resource_type="user",
+        resource_id=str(user.id),
+        details={"is_active": user.is_active}
+    )
+
+    return UserResponse.model_validate(user)
+
+
+@router.get("/audit-logs")
+def get_system_audit_logs(
+    limit: int = 50,
+    current_user: Admin = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves system security and operational audit logs (Admin Only).
+    """
+    logs = db.query(AuditLog).order_by(AuditLog.id.desc()).limit(limit).all()
+    return [
+        {
+            "id": l.id,
+            "admin_id": l.admin_id,
+            "actor_email": l.actor_email,
+            "actor_role": l.actor_role,
+            "action": l.action,
+            "resource_type": l.resource_type,
+            "resource_id": l.resource_id,
+            "details": l.details,
+            "ip_address": l.ip_address,
+            "created_at": l.created_at.isoformat() if l.created_at else None
+        }
+        for l in logs
+    ]

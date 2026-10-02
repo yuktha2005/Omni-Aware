@@ -18,6 +18,7 @@ import {
   ContentLibraryIcon,
   LogoutIcon,
   RadioIcon,
+  CheckCircleIcon,
 } from "../ui/Icons";
 
 interface NavItem {
@@ -46,18 +47,27 @@ const navSections: NavSection[] = [
   {
     title: "Mass Communication",
     items: [
-      { name: "Campaign Broadcasts", path: "/campaigns", icon: CampaignIcon, roles: ["admin", "campaign_manager"] },
-      { name: "AI Campaign Wizard", path: "/campaigns/wizard", icon: WizardIcon, roles: ["admin", "campaign_manager"], badge: "AI Gen", badgeColor: "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" },
+      { name: "Campaign Broadcasts", path: "/campaigns", icon: CampaignIcon },
+      {
+        name: "Campaign Approvals",
+        path: "/approvals",
+        icon: CheckCircleIcon,
+        roles: ["admin", "campaign_manager"],
+        badge: "Review",
+        badgeColor: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+      },
+      { name: "AI Campaign Wizard", path: "/campaigns/wizard", icon: WizardIcon, badge: "AI Gen", badgeColor: "bg-indigo-500/20 text-indigo-300 border-indigo-500/40" },
       { name: "Message Templates", path: "/templates", icon: TemplateIcon },
       { name: "Broadcast Scheduling", path: "/scheduling", icon: ScheduleIcon, roles: ["admin", "campaign_manager"] },
       { name: "Content Library", path: "/content-library", icon: ContentLibraryIcon },
     ],
   },
+
   {
     title: "Audience & Data Ingestion",
     items: [
       { name: "Recipient Directory", path: "/recipients", icon: UsersIcon },
-      { name: "Batch Data Ingestion", path: "/import", icon: ImportIcon, roles: ["admin"], badge: "DLT", badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" },
+      { name: "Batch Data Ingestion", path: "/import", icon: ImportIcon, roles: ["admin", "communication_team"], badge: "DLT", badgeColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" },
       { name: "Audience Segments", path: "/audience", icon: AudienceIcon, roles: ["admin", "campaign_manager"] },
       { name: "Master Registries", path: "/master-data", icon: DatabaseIcon, roles: ["admin"] },
     ],
@@ -65,7 +75,7 @@ const navSections: NavSection[] = [
   {
     title: "Intelligence & Security",
     items: [
-      { name: "Telemetry & Analytics", path: "/analytics", icon: AnalyticsIcon, roles: ["admin", "campaign_manager"], badge: "Live", badgeColor: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" },
+      { name: "Telemetry & Analytics", path: "/analytics", icon: AnalyticsIcon, badge: "Live", badgeColor: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" },
       { name: "Access & Governance", path: "/team", icon: TeamIcon, roles: ["admin"] },
     ],
   },

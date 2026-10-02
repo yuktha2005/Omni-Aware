@@ -245,4 +245,92 @@
   .animate-border-pulse {
     animation: borderPulse 3s ease-in-out infinite;
   }
+
+  /* Translation Scene Animations */
+  @keyframes driftSlow {
+    0% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-18px) rotate(4deg);
+    }
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+  }
+
+  @keyframes driftSlowReverse {
+    0% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(18px) rotate(-4deg);
+    }
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+  }
+
+  @keyframes translationPulse {
+    0%, 100% {
+      opacity: 0.25;
+      transform: scale(0.96);
+    }
+    50% {
+      opacity: 0.85;
+      transform: scale(1.04);
+      filter: drop-shadow(0 0 16px rgba(99, 102, 241, 0.6));
+    }
+  }
+
+  @keyframes laserScan {
+    0% {
+      transform: translateX(-100%) translateY(-50%) rotate(25deg);
+      opacity: 0;
+    }
+    30% {
+      opacity: 0.7;
+    }
+    70% {
+      opacity: 0.7;
+    }
+    100% {
+      transform: translateX(200%) translateY(50%) rotate(25deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes morphTranslate {
+    0%, 20% {
+      opacity: 1;
+      transform: translateY(0px);
+    }
+    25%, 95% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0px);
+    }
+  }
+
+  .animate-drift-1 {
+    animation: driftSlow 7s ease-in-out infinite;
+  }
+  .animate-drift-2 {
+    animation: driftSlowReverse 9s ease-in-out infinite;
+  }
+  .animate-drift-3 {
+    animation: driftSlow 11s ease-in-out 1.5s infinite;
+  }
+  .animate-drift-4 {
+    animation: driftSlowReverse 13s ease-in-out 2s infinite;
+  }
+  .animate-translation-pulse {
+    animation: translationPulse 4s ease-in-out infinite;
+  }
+  .animate-laser-scan {
+    animation: laserScan 6s ease-in-out infinite;
+  }
 }

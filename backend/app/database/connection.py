@@ -38,7 +38,12 @@ def apply_schema_migrations():
         "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;",
         "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS total_recipients INTEGER DEFAULT 0;",
         "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS total_delivered INTEGER DEFAULT 0;",
-        "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS total_failed INTEGER DEFAULT 0;"
+        "ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS total_failed INTEGER DEFAULT 0;",
+        "ALTER TABLE campaign_contents ADD COLUMN IF NOT EXISTS translation_evaluation_score FLOAT;",
+        "ALTER TABLE campaign_contents ADD COLUMN IF NOT EXISTS translation_evaluation_details JSONB;",
+        "ALTER TABLE campaign_contents ADD COLUMN IF NOT EXISTS translation_review_status VARCHAR(50) DEFAULT 'pending';",
+        "ALTER TABLE campaign_contents ADD COLUMN IF NOT EXISTS translation_reviewed_at TIMESTAMP;",
+        "ALTER TABLE campaign_contents ADD COLUMN IF NOT EXISTS translation_reviewed_by BIGINT;"
     ]
     try:
         with engine.connect() as conn:

@@ -76,6 +76,13 @@ class CampaignContent(Base):
     compliance_details = Column(JSONB, nullable=True)
     factual_status = Column(String(50), default="unable_to_verify")
     
+    # Translation Quality Evaluation fields
+    translation_evaluation_score = Column(Float, nullable=True)
+    translation_evaluation_details = Column(JSONB, nullable=True)
+    translation_review_status = Column(String(50), default="pending")  # pending, approved, rejected, edited
+    translation_reviewed_at = Column(DateTime, nullable=True)
+    translation_reviewed_by = Column(BigInteger, nullable=True)
+    
     status = Column(String(50), default="ready_for_distribution")
     created_at = Column(DateTime, server_default=func.now())
 

@@ -1,5 +1,5 @@
 import apiClient from "./api";
-import type { LoginRequest, LoginResponse, RegisterRequest, Admin, UpdateRoleRequest } from "../types/auth";
+import type { LoginRequest, LoginResponse, RegisterRequest, Admin, UpdateRoleRequest, AuditLog } from "../types/auth";
 import type { RecipientsListResponse, Recipient } from "../types/recipient";
 import type { MasterRecord } from "../types/master";
 import type { Segment, SegmentCreate, SegmentCreateResponse, SegmentPreviewResponse } from "../types/segment";
@@ -21,6 +21,12 @@ export const authAPI = {
 
   updateUserRole: (userId: number, data: UpdateRoleRequest): Promise<{ data: Admin }> =>
     apiClient.put<Admin>(`/auth/users/${userId}/role`, data),
+
+  toggleUserStatus: (userId: number): Promise<{ data: Admin }> =>
+    apiClient.post<Admin>(`/auth/users/${userId}/toggle-status`),
+
+  getAuditLogs: (params?: { limit?: number; action?: string }): Promise<{ data: AuditLog[] }> =>
+    apiClient.get<AuditLog[]>("/auth/audit-logs", { params }),
 };
 
 export const recipientAPI = {
@@ -130,7 +136,28 @@ export const campaignAPI = {
 
   processPipeline: (data: any): Promise<{ data: any }> =>
     apiClient.post<any>("/ai/process", data),
+
+  getApprovalQueue: (statusFilter?: string): Promise<{ data: any[] }> =>
+    apiClient.get<any[]>("/ai/campaigns/approvals/queue", {
+      params: statusFilter ? { status_filter: statusFilter } : {},
+    }),
+
+  submitApproval: (
+    campaignId: number,
+    data?: string | { notes?: string; scheduled_at?: string; scheduled_timezone?: string; selected_channels?: string[] }
+  ): Promise<{ data: any }> => {
+    const payload = typeof data === "string" ? { notes: data } : (data || {});
+    return apiClient.post<any>(`/ai/campaigns/${campaignId}/submit-approval`, payload);
+  },
+
+  approve: (campaignId: number, notes?: string): Promise<{ data: any }> =>
+    apiClient.post<any>(`/ai/campaigns/${campaignId}/approve`, { notes }),
+
+  reject: (campaignId: number, reason?: string): Promise<{ data: any }> =>
+    apiClient.post<any>(`/ai/campaigns/${campaignId}/reject`, { reason }),
 };
+
+
 
 export const distributionAPI = {
   schedule: (campaignId: number, data: any): Promise<{ data: any }> =>
@@ -191,4 +218,61 @@ export const analyticsAPI = {
   recordEvent: (campaignId: number, data: any): Promise<{ data: any }> =>
     apiClient.post<any>(`/analytics/campaigns/${campaignId}/events`, data),
 };
+
+export const factVerificationAPI = {
+  extractAndVerify: (data: {
+    title: string;
+    body: string;
+    key_information?: string;
+    campaign_id?: number;
+    content_id?: number;
+  }): Promise<{ data: any }> =>
+    apiClient.post<any>("/fact-verification/extract-and-verify", data),
+
+  getCampaignClaims: (campaignId: number): Promise<{ data: any[] }> =>
+    apiClient.get<any[]>(`/fact-verification/campaign/${campaignId}`),
+
+  reviewClaim: (claimId: number, data: { decision: string; notes?: string }): Promise<{ data: any }> =>
+    apiClient.post<any>(`/fact-verification/claim/${claimId}/review`, data),
+
+  getSources: (): Promise<{ data: any[] }> =>
+    apiClient.get<any[]>("/fact-verification/sources"),
+
+  addSource: (data: { name: string; url: string; category: string; description?: string }): Promise<{ data: any }> =>
+    apiClient.post<any>("/fact-verification/sources", data),
+};
+
+export const translationEvaluationAPI = {
+  evaluate: (data: {
+    source_text: string;
+    translated_text: string;
+    source_language?: string;
+    target_language?: string;
+    is_emergency_content?: boolean;
+    content_id?: number;
+    campaign_id?: number;
+  }): Promise<{ data: any }> =>
+    apiClient.post<any>("/translation-evaluation/evaluate", data),
+
+  reviewContent: (contentId: number, data: { review_status: string; edited_text?: string; reviewer_notes?: string }): Promise<{ data: any }> =>
+    apiClient.post<any>(`/translation-evaluation/content/${contentId}/review`, data),
+};
+
+export const quizAPI = {
+  generate: (campaignId: number, data?: { language?: string; num_questions?: number }): Promise<{ data: any }> =>
+    apiClient.post<any>(`/quizzes/generate/${campaignId}`, data || {}),
+
+  getCampaignQuizzes: (campaignId: number): Promise<{ data: any[] }> =>
+    apiClient.get<any[]>(`/quizzes/campaign/${campaignId}`),
+
+  getPublicQuiz: (quizId: number): Promise<{ data: any }> =>
+    apiClient.get<any>(`/quizzes/${quizId}`),
+
+  submitQuiz: (quizId: number, data: { answers: Record<string, string>; language?: string; session_id?: string }): Promise<{ data: any }> =>
+    apiClient.post<any>(`/quizzes/${quizId}/submit`, data),
+
+  getUnderstandingAnalytics: (campaignId: number): Promise<{ data: any }> =>
+    apiClient.get<any>(`/quizzes/campaign/${campaignId}/analytics`),
+};
+
 

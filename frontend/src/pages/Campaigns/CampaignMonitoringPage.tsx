@@ -6,12 +6,15 @@ import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
 import StatsCard from "../../components/ui/StatsCard";
 import { useToast } from "../../hooks/useToast";
+import { useAuth } from "../../contexts/AuthContext";
 import { ToastManager } from "../../components/ui/Toast";
 import LoadingSkeleton from "../../components/ui/LoadingSkeleton";
 import ErrorState from "../../components/ui/ErrorState";
+import { UnderstandingAnalyticsCard } from "../../components/campaigns/UnderstandingAnalyticsCard";
 import type { CampaignMonitoringData } from "../../types/distribution";
 
 const CampaignMonitoringPage = () => {
+  const { isCampaignManager } = useAuth();
   const { id } = useParams<{ id: string }>();
   const campaignId = parseInt(id || "0", 10);
   const navigate = useNavigate();
@@ -116,12 +119,12 @@ const CampaignMonitoringPage = () => {
           <Button variant="outline" size="sm" onClick={() => navigate(`/analytics?campaignId=${campaignId}`)}>
             View Analytics →
           </Button>
-          {metrics.failed > 0 && (
+          {isCampaignManager && metrics.failed > 0 && (
             <Button variant="primary" size="sm" loading={actionLoading} onClick={handleRetry}>
               🔄 Retry Failures ({metrics.failed})
             </Button>
           )}
-          {data.status === "running" && (
+          {isCampaignManager && data.status === "running" && (
             <Button variant="outline" size="sm" loading={actionLoading} onClick={handleCancel}>
               Cancel Campaign
             </Button>
@@ -201,6 +204,12 @@ const CampaignMonitoringPage = () => {
           </div>
         )}
       </Card>
+
+      {/* Citizen Understanding & Comprehension Telemetry */}
+      <UnderstandingAnalyticsCard
+        campaignId={campaignId}
+        campaignTitle={data?.title}
+      />
 
       <ToastManager toast={toast} />
     </div>

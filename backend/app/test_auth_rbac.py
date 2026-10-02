@@ -2,6 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 from database.connection import get_db, SessionLocal
+from models.campaign import Campaign, CampaignContent
+from models.audit import AuditLog
 from models.admin import Admin
 
 client = TestClient(app)
@@ -12,8 +14,19 @@ def cleanup_test_users():
     yield
     db = SessionLocal()
     try:
-        db.query(Admin).filter(Admin.email.like("test_%@example.com")).delete(synchronize_session=False)
+        test_admins = db.query(Admin).filter(Admin.email.like("test_%@example.com")).all()
+        admin_ids = [a.id for a in test_admins]
+        if admin_ids:
+            test_camps = db.query(Campaign).filter(Campaign.created_by_admin_id.in_(admin_ids)).all()
+            camp_ids = [c.id for c in test_camps]
+            if camp_ids:
+                db.query(CampaignContent).filter(CampaignContent.campaign_id.in_(camp_ids)).delete(synchronize_session=False)
+                db.query(Campaign).filter(Campaign.id.in_(camp_ids)).delete(synchronize_session=False)
+            db.query(AuditLog).filter(AuditLog.admin_id.in_(admin_ids)).delete(synchronize_session=False)
+            db.query(Admin).filter(Admin.id.in_(admin_ids)).delete(synchronize_session=False)
         db.commit()
+    except Exception:
+        db.rollback()
     finally:
         db.close()
 
