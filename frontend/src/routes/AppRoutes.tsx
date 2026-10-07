@@ -42,6 +42,7 @@ const RequireAuth = ({ children }: { children: JSX.Element }) => {
 const AppRoutes = () => {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/quiz/:quizId" element={<CitizenQuizPage />} />

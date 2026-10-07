@@ -14,7 +14,7 @@ from services.analytics.understanding_analytics_service import understanding_ana
 from services.auth_service import get_current_admin
 
 router = APIRouter(
-    prefix="/api/quizzes",
+    prefix="/quizzes",
     tags=["Citizen Understanding & Comprehension Quizzes"]
 )
 

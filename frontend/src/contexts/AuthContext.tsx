@@ -3,6 +3,8 @@ import { authAPI } from "../services/apiService";
 import { setAuthLogoutCallback } from "../services/api";
 import type { LoginRequest, RegisterRequest, Admin, UserRole } from "../types/auth";
 
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
 interface AuthContextType {
   admin: Admin | null;
   user: Admin | null;
@@ -15,9 +17,11 @@ interface AuthContextType {
   hasRole: (roles: UserRole[]) => boolean;
   login: (data: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
-  logout: () => void;
+  logout: (reason?: string) => void;
   isAuthenticated: boolean;
   refreshUser: () => Promise<void>;
+  inactivityMessage: string | null;
+  clearInactivityMessage: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +42,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [token, setToken] = useState<string | null>(null);
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inactivityMessage, setInactivityMessage] = useState<string | null>(null);
 
   const isAuthenticated = !!token;
   const role: UserRole = admin?.role || "communication_team";
@@ -51,19 +56,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return roles.includes(admin.role);
   };
 
-  const logout = () => {
+  const clearInactivityMessage = () => {
+    setInactivityMessage(null);
+  };
+
+  const logout = (reason?: string) => {
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("admin_info");
+    sessionStorage.removeItem("last_activity_time");
     localStorage.removeItem("access_token");
     localStorage.removeItem("admin_info");
+    localStorage.removeItem("last_activity_time");
     setToken(null);
     setAdmin(null);
+    if (reason === "inactivity") {
+      setInactivityMessage("Your session expired due to 30 minutes of inactivity. Please sign in again.");
+    }
+  };
+
+  const updateActivityTimestamp = () => {
+    const now = Date.now();
+    sessionStorage.setItem("last_activity_time", now.toString());
   };
 
   const login = async (data: LoginRequest): Promise<void> => {
     setLoading(true);
+    setInactivityMessage(null);
     try {
       const response = await authAPI.login(data);
       const { access_token, user } = response.data;
-      localStorage.setItem("access_token", access_token);
+      sessionStorage.setItem("access_token", access_token);
+      sessionStorage.setItem("last_activity_time", Date.now().toString());
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("admin_info");
 
       let adminInfo: Admin;
       if (user) {
@@ -79,7 +104,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         };
       }
 
-      localStorage.setItem("admin_info", JSON.stringify(adminInfo));
+      sessionStorage.setItem("admin_info", JSON.stringify(adminInfo));
       setToken(access_token);
       setAdmin(adminInfo);
     } finally {
@@ -89,10 +114,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const register = async (data: RegisterRequest): Promise<void> => {
     setLoading(true);
+    setInactivityMessage(null);
     try {
       const response = await authAPI.register(data);
       const { access_token, user } = response.data;
-      localStorage.setItem("access_token", access_token);
+      sessionStorage.setItem("access_token", access_token);
+      sessionStorage.setItem("last_activity_time", Date.now().toString());
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("admin_info");
 
       let adminInfo: Admin;
       if (user) {
@@ -108,7 +137,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         };
       }
 
-      localStorage.setItem("admin_info", JSON.stringify(adminInfo));
+      sessionStorage.setItem("admin_info", JSON.stringify(adminInfo));
       setToken(access_token);
       setAdmin(adminInfo);
     } finally {
@@ -121,31 +150,106 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const res = await authAPI.getMe();
       setAdmin(res.data);
-      localStorage.setItem("admin_info", JSON.stringify(res.data));
+      sessionStorage.setItem("admin_info", JSON.stringify(res.data));
     } catch {
       // Ignored if offline
     }
   };
 
+  // Initial session restoration with 30-minute inactivity check
   useEffect(() => {
-    const storedToken = localStorage.getItem("access_token");
-    const storedAdmin = localStorage.getItem("admin_info");
+    // Clear any lingering localStorage tokens so fresh launches always start at Login
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("admin_info");
+    localStorage.removeItem("last_activity_time");
+
+    const storedToken = sessionStorage.getItem("access_token");
+    const storedAdmin = sessionStorage.getItem("admin_info");
+    const storedLastActivity = sessionStorage.getItem("last_activity_time");
+
     if (storedToken && storedAdmin) {
-      try {
-        setToken(storedToken);
-        setAdmin(JSON.parse(storedAdmin));
-      } catch {
-        localStorage.removeItem("admin_info");
+      const lastActiveTime = storedLastActivity ? parseInt(storedLastActivity, 10) : 0;
+      const now = Date.now();
+
+      // Check if session has been inactive for > 30 mins
+      if (lastActiveTime && now - lastActiveTime > INACTIVITY_TIMEOUT_MS) {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("admin_info");
+        sessionStorage.removeItem("last_activity_time");
+        setInactivityMessage("Your session expired due to 30 minutes of inactivity. Please sign in again.");
+      } else {
+        try {
+          setToken(storedToken);
+          setAdmin(JSON.parse(storedAdmin));
+          sessionStorage.setItem("last_activity_time", now.toString());
+        } catch {
+          sessionStorage.removeItem("admin_info");
+        }
       }
     }
+
     setAuthLogoutCallback(() => {
       setToken(null);
       setAdmin(null);
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("admin_info");
+      sessionStorage.removeItem("access_token");
+      sessionStorage.removeItem("admin_info");
+      sessionStorage.removeItem("last_activity_time");
     });
     setLoading(false);
   }, []);
+
+  // Continuous 30-minute idle activity tracker while authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleUserActivity = () => {
+      if (!throttleTimer) {
+        updateActivityTimestamp();
+        throttleTimer = setTimeout(() => {
+          throttleTimer = null;
+        }, 5000); // Throttled every 5 seconds
+      }
+    };
+
+    const activityEvents = [
+      "mousedown",
+      "mousemove",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "click",
+      "wheel"
+    ];
+
+    activityEvents.forEach((ev) => {
+      window.addEventListener(ev, handleUserActivity, { passive: true });
+    });
+
+    // Check every 10 seconds if 30 minutes of inactivity has elapsed
+    const checkInterval = setInterval(() => {
+      const storedLastActive =
+        sessionStorage.getItem("last_activity_time") ||
+        localStorage.getItem("last_activity_time");
+      if (storedLastActive) {
+        const lastActiveTime = parseInt(storedLastActive, 10);
+        const idleDuration = Date.now() - lastActiveTime;
+
+        if (idleDuration >= INACTIVITY_TIMEOUT_MS) {
+          logout("inactivity");
+        }
+      }
+    }, 10000);
+
+    return () => {
+      activityEvents.forEach((ev) => {
+        window.removeEventListener(ev, handleUserActivity);
+      });
+      clearInterval(checkInterval);
+      if (throttleTimer) clearTimeout(throttleTimer);
+    };
+  }, [isAuthenticated]);
 
   return (
     <AuthContext.Provider
@@ -164,6 +268,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         logout,
         isAuthenticated,
         refreshUser,
+        inactivityMessage,
+        clearInactivityMessage,
       }}
     >
       {children}

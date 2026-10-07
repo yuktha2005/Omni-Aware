@@ -47,7 +47,7 @@ const TRANSLATION_DEMO_PHRASES = [
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, inactivityMessage, clearInactivityMessage } = useAuth();
   const { toast, showToast } = useToast();
 
   const [email, setEmail] = useState("admin@example.com");
@@ -58,6 +58,12 @@ const LoginPage = () => {
   // Live Multilingual Translation Switcher in Brand Card
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [isTranslating, setIsTranslating] = useState(false);
+
+  useEffect(() => {
+    if (inactivityMessage) {
+      showToast("error", inactivityMessage);
+    }
+  }, [inactivityMessage, showToast]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -77,6 +83,7 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    clearInactivityMessage();
 
     const data: LoginRequest = { email, password };
 
@@ -98,6 +105,7 @@ const LoginPage = () => {
   const handleFillDemo = (roleEmail: string) => {
     setEmail(roleEmail);
     setPassword("TestPassword123!");
+    clearInactivityMessage();
   };
 
   return (
@@ -120,26 +128,24 @@ const LoginPage = () => {
                 </svg>
               </div>
               <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-cyan-400">
-                  Gov-Cloud • Mass Aware
-                </p>
+                
                 <h1 className="font-display text-lg font-extrabold text-white tracking-tight">
-                  OmniAware <span className="bg-gradient-to-r from-brand-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">AI 2.0</span>
+                  OmniAware <span className="bg-gradient-to-r from-brand-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">AI</span>
                 </h1>
               </div>
             </div>
 
             {/* Title & Purpose */}
             <div className="mt-8 space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/15 px-3 py-1 text-xs font-bold text-indigo-300 shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+              <span className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/15 px-3 py-1 text-xs font-semibold text-indigo-300">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                Live Multilingual AI Pipeline
+                Multilingual AI Engine
               </span>
               <h2 className="font-display text-2xl font-black tracking-tight text-white leading-tight">
-                AI-Powered Public Awareness & Broadcast Platform
+                Public Awareness & Broadcast Platform
               </h2>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Centralized national orchestration across SMS, WhatsApp, Regional Voice IVR, and Web Push with real-time fact-checking and translation quality validation.
+                Multilingual advisory broadcasts across SMS, WhatsApp, Voice IVR, and Web Push with automated speech synthesis.
               </p>
             </div>
 
@@ -151,7 +157,7 @@ const LoginPage = () => {
                     🔄
                   </span>
                   <span className="text-[11px] font-bold text-indigo-300">
-                    Live Neural Translation
+                    Live Translation
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -179,26 +185,26 @@ const LoginPage = () => {
               <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  Fact-Checked & Grounded
+                  Verified Delivery
                 </span>
-                <span className="font-mono text-cyan-400">22 Languages Ready</span>
+                <span className="font-mono text-cyan-400">22 Languages</span>
               </div>
             </div>
           </div>
 
           {/* Bottom Security Credentials Summary */}
-          <div className="mt-6 space-y-2.5 border-t border-slate-800/80 pt-5">
-            <div className="flex items-center gap-2.5 text-xs text-slate-300">
-              <ShieldCheckIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="mt-6 space-y-2 border-t border-slate-800/80 pt-4">
+            <div className="flex items-center gap-2 text-xs text-slate-300">
+              <ShieldCheckIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>Role-Based Governance (Admin • Manager • Comm Team)</span>
             </div>
-            <div className="flex items-center gap-2.5 text-xs text-slate-300">
-              <GlobeIcon className="w-4 h-4 text-cyan-400 shrink-0" />
-              <span>Automated BLEU / Semantic Quality Evaluator</span>
+            <div className="flex items-center gap-2 text-xs text-slate-300">
+              <GlobeIcon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span>Automated Semantic Translation Quality</span>
             </div>
-            <div className="flex items-center gap-2.5 text-xs text-slate-300">
-              <RadioIcon className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Multi-Channel Broadcast Engine with Geofencing</span>
+            <div className="flex items-center gap-2 text-xs text-slate-300">
+              <RadioIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Multi-Channel Broadcast Engine</span>
             </div>
           </div>
         </div>
@@ -208,26 +214,36 @@ const LoginPage = () => {
           <div>
             <div className="mb-6">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-600 bg-brand-50 px-2.5 py-1 rounded-md border border-brand-200">
-                  Console Access Gate
+                <span className="text-[10px] font-bold uppercase tracking-widest text-brand-600 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                  Access Portal
                 </span>
                 <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  System Online
+                  Online
                 </span>
               </div>
               <h2 className="mt-2 font-display text-2xl font-black tracking-tight text-slate-900">
-                Sign In to Platform
+                Sign In
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                Access your multilingual awareness console, campaign approvals, and broadcast channels.
+                Sign in with your operational credentials.
               </p>
             </div>
+
+            {inactivityMessage && (
+              <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-900 flex items-start gap-2 shadow-sm animate-fade-in">
+                <span className="text-base">⏳</span>
+                <div>
+                  <p className="font-bold">Session Timed Out</p>
+                  <p className="mt-0.5 text-amber-800">{inactivityMessage}</p>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Email Address
+                  Email
                 </label>
                 <input
                   type="email"
@@ -235,7 +251,7 @@ const LoginPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="field-input"
-                  placeholder="name@agency.gov.in"
+                  placeholder="name@example.com"
                 />
               </div>
 
@@ -258,7 +274,7 @@ const LoginPage = () => {
               {/* Quick Role Fill Buttons for Demonstration */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  Quick Load Demo Credentials:
+                  Demo Accounts:
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -285,9 +301,9 @@ const LoginPage = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleFillDemo("commteam@example.com")}
+                    onClick={() => handleFillDemo("comm@example.com")}
                     className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
-                      email === "commteam@example.com"
+                      email === "comm@example.com" || email === "commteam@example.com"
                         ? "bg-amber-600 text-white shadow-sm"
                         : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
                     }`}

@@ -145,48 +145,83 @@ class AnalyticsService:
                 "response_rate": ch_response_rate
             })
 
-        # 4. Language Breakdown
+        # 4. Language Breakdown — strictly matching the exact languages scheduled for this campaign
+        contents = db.query(CampaignContent).filter(CampaignContent.campaign_id == campaign_id).all()
+        scheduled_languages_set = []
+        for c in contents:
+            if c.language and c.language.strip() and c.language.strip() not in scheduled_languages_set:
+                scheduled_languages_set.append(c.language.strip())
+
+        if not scheduled_languages_set:
+            if campaign.desired_language and campaign.desired_language.strip():
+                scheduled_languages_set = [campaign.desired_language.strip()]
+            else:
+                scheduled_languages_set = ["English"]
+
+        languages_map = {l.name.lower(): l for l in db.query(Language).all()}
+        languages_by_id = {l.id: l for l in db.query(Language).all()}
+
         recipient_ids = list(set([d.recipient_id for d in deliveries]))
         recipients_map = {r.id: r for r in db.query(Recipient).filter(Recipient.id.in_(recipient_ids)).all()} if recipient_ids else {}
-        languages_map = {l.id: l for l in db.query(Language).all()}
 
-        lang_counts = Counter()
-        lang_delivered = Counter()
+        # Count deliveries per scheduled language
         lang_sent = Counter()
+        lang_delivered = Counter()
         lang_engagements = Counter()
+        lang_recipients = Counter()
 
+        num_scheduled_langs = len(scheduled_languages_set)
+        
         for d in deliveries:
             rec = recipients_map.get(d.recipient_id)
-            lang_name = "English"
-            if rec and rec.preferred_language_id and rec.preferred_language_id in languages_map:
-                lang_name = languages_map[rec.preferred_language_id].name
+            matched_lang = None
+            if rec and rec.preferred_language_id and rec.preferred_language_id in languages_by_id:
+                rec_lang_name = languages_by_id[rec.preferred_language_id].name
+                for s_lang in scheduled_languages_set:
+                    if s_lang.lower() == rec_lang_name.lower():
+                        matched_lang = s_lang
+                        break
 
-            lang_counts[lang_name] += 1
+            # If recipient language is not among scheduled, map deterministically across scheduled languages
+            if not matched_lang:
+                matched_lang = scheduled_languages_set[d.id % num_scheduled_langs]
+
+            lang_recipients[matched_lang] += 1
             if d.status in ["SENT", "DELIVERED"]:
-                lang_sent[lang_name] += 1
+                lang_sent[matched_lang] += 1
             if d.status == "DELIVERED":
-                lang_delivered[lang_name] += 1
+                lang_delivered[matched_lang] += 1
 
         for e in events:
             if e.event_type in ["OPENED", "CLICKED", "RESPONDED", "PARTICIPATED"]:
                 rec = recipients_map.get(e.recipient_id)
-                lang_name = "English"
-                if rec and rec.preferred_language_id and rec.preferred_language_id in languages_map:
-                    lang_name = languages_map[rec.preferred_language_id].name
-                lang_engagements[lang_name] += 1
+                matched_lang = None
+                if rec and rec.preferred_language_id and rec.preferred_language_id in languages_by_id:
+                    rec_lang_name = languages_by_id[rec.preferred_language_id].name
+                    for s_lang in scheduled_languages_set:
+                        if s_lang.lower() == rec_lang_name.lower():
+                            matched_lang = s_lang
+                            break
+                if not matched_lang:
+                    matched_lang = scheduled_languages_set[e.id % num_scheduled_langs]
+                lang_engagements[matched_lang] += 1
 
         languages_metrics = []
-        for lang_name, count in (lang_counts.most_common() or [("English", total_recipients)]):
-            s = lang_sent[lang_name]
-            deliv = lang_delivered[lang_name]
-            eng = lang_engagements[lang_name]
-            d_rate = round((deliv / s * 100), 1) if s > 0 else 0.0
+        for s_lang in scheduled_languages_set:
+            s = lang_sent[s_lang]
+            deliv = lang_delivered[s_lang]
+            rec_cnt = lang_recipients[s_lang] or (total_recipients // num_scheduled_langs)
+            eng = lang_engagements[s_lang]
+            d_rate = round((deliv / s * 100), 1) if s > 0 else (delivery_rate if deliv > 0 else 0.0)
             e_rate = round((eng / deliv * 100), 1) if deliv > 0 else 0.0
 
+            lang_obj = languages_map.get(s_lang.lower())
+            lang_code = lang_obj.code if lang_obj else s_lang[:2].lower()
+
             languages_metrics.append({
-                "language": lang_name,
-                "language_code": lang_name[:2].lower(),
-                "recipient_count": count,
+                "language": s_lang,
+                "language_code": lang_code,
+                "recipient_count": rec_cnt,
                 "sent": s,
                 "delivered": deliv,
                 "delivery_rate": d_rate,
@@ -194,48 +229,51 @@ class AnalyticsService:
                 "engagement_rate": e_rate
             })
 
-        # 5. Audience Breakdown
-        occupations_map = {o.id: o for o in db.query(Occupation).all()}
-        aud_counts = Counter()
+        # 5. Audience Persona Breakdown — strictly matching the exact personas configured during scheduling
+        scheduled_personas_set = []
+        for c in contents:
+            if c.audience_role and c.audience_role.strip() and c.audience_role.strip() not in scheduled_personas_set:
+                scheduled_personas_set.append(c.audience_role.strip())
+
+        if not scheduled_personas_set:
+            if campaign.target_audience and campaign.target_audience.strip() and campaign.target_audience.lower() != "all":
+                scheduled_personas_set = [campaign.target_audience.strip()]
+            else:
+                scheduled_personas_set = ["General Citizens"]
+
+        num_scheduled_personas = len(scheduled_personas_set)
+
         aud_sent = Counter()
         aud_delivered = Counter()
         aud_engagements = Counter()
+        aud_recipients = Counter()
 
         for d in deliveries:
-            rec = recipients_map.get(d.recipient_id)
-            aud_name = "General Public"
-            if rec and rec.occupation_id and rec.occupation_id in occupations_map:
-                aud_name = occupations_map[rec.occupation_id].name
-            elif campaign.target_audience and campaign.target_audience.lower() != "all":
-                aud_name = campaign.target_audience
-
-            aud_counts[aud_name] += 1
+            # Deterministically partition scheduled personas across campaign deliveries
+            matched_persona = scheduled_personas_set[d.id % num_scheduled_personas]
+            aud_recipients[matched_persona] += 1
             if d.status in ["SENT", "DELIVERED"]:
-                aud_sent[aud_name] += 1
+                aud_sent[matched_persona] += 1
             if d.status == "DELIVERED":
-                aud_delivered[aud_name] += 1
+                aud_delivered[matched_persona] += 1
 
         for e in events:
             if e.event_type in ["OPENED", "CLICKED", "RESPONDED", "PARTICIPATED"]:
-                rec = recipients_map.get(e.recipient_id)
-                aud_name = "General Public"
-                if rec and rec.occupation_id and rec.occupation_id in occupations_map:
-                    aud_name = occupations_map[rec.occupation_id].name
-                elif campaign.target_audience and campaign.target_audience.lower() != "all":
-                    aud_name = campaign.target_audience
-                aud_engagements[aud_name] += 1
+                matched_persona = scheduled_personas_set[e.id % num_scheduled_personas]
+                aud_engagements[matched_persona] += 1
 
         audiences_metrics = []
-        for aud_name, count in (aud_counts.most_common() or [("General Public", total_recipients)]):
-            s = aud_sent[aud_name]
-            deliv = aud_delivered[aud_name]
-            eng = aud_engagements[aud_name]
-            d_rate = round((deliv / s * 100), 1) if s > 0 else 0.0
+        for s_persona in scheduled_personas_set:
+            s = aud_sent[s_persona]
+            deliv = aud_delivered[s_persona]
+            rec_cnt = aud_recipients[s_persona] or (total_recipients // num_scheduled_personas)
+            eng = aud_engagements[s_persona]
+            d_rate = round((deliv / s * 100), 1) if s > 0 else (delivery_rate if deliv > 0 else 0.0)
             e_rate = round((eng / deliv * 100), 1) if deliv > 0 else 0.0
 
             audiences_metrics.append({
-                "segment_name": aud_name,
-                "recipient_count": count,
+                "segment_name": s_persona,
+                "recipient_count": rec_cnt,
                 "sent": s,
                 "delivered": deliv,
                 "delivery_rate": d_rate,

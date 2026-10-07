@@ -48,6 +48,18 @@ class PersonalizationService:
             role_cta = "Healthcare team members, please review the clinical schedule and consultation roster."
             short_prefix = "Healthcare Staff: "
             applied_rules.append("Applied medical/clinical workflow hooks")
+        elif "farmer" in role_lower or "agri" in role_lower:
+            role_header = "Dear Farmers & Agricultural Producers:"
+            role_context = "As the backbone of our agricultural community, timely awareness and proactive measures protect your yield and livelihood."
+            role_cta = "Farmers, please consult your nearest Krishi Vigyan Kendra (KVK) or contact the agricultural officer."
+            short_prefix = "Farmers: "
+            applied_rules.append("Applied agrarian and crop protection advisory hooks")
+        elif "senior" in role_lower or "elder" in role_lower:
+            role_header = "Dear Senior Citizens & Elders:"
+            role_context = "Your comfort, health, and dignity are our utmost priority. Priority assistance is available for all elderly citizens."
+            role_cta = "Senior citizens, please utilize the designated priority counters or call the dedicated helpline."
+            short_prefix = "Senior Citizens: "
+            applied_rules.append("Applied senior priority and accessible assistance hooks")
         elif "employee" in role_lower or "staff" in role_lower or "admin" in role_lower:
             role_header = "Dear Team & Staff Members:"
             role_context = "As valued employees, maintaining high awareness and active participation benefits our entire organization."

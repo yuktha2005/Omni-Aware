@@ -155,6 +155,20 @@ class FactVerificationService:
                 "requires_human_review": requires_human_review
             })
 
+        if not extracted_claims and full_text:
+            if title and len(title.strip()) > 3:
+                extracted_claims.append({
+                    "claim_text": title.strip(),
+                    "claim_category": "General Advisory",
+                    "requires_human_review": False
+                })
+            if body and len(body.strip()) > 3:
+                extracted_claims.append({
+                    "claim_text": body.strip()[:250],
+                    "claim_category": "Public Advisory Fact",
+                    "requires_human_review": False
+                })
+
         return extracted_claims
 
     def verify_claim(self, claim_text: str, category: str, db: Optional[Session] = None) -> Dict[str, Any]:

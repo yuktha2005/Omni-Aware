@@ -56,10 +56,8 @@ const TopBar = ({
 
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-brand-600">
-              Cloud Console
-            </span>
-            <span className="text-slate-300">/</span>
+           
+            
             {/* Live Operational Status Chip */}
             <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-2 py-0.5 border border-slate-200 text-[11px] font-medium text-slate-700">
               <span
@@ -70,7 +68,7 @@ const TopBar = ({
                 }`}
               />
               <span className="hidden xs:inline text-[10px] font-semibold tracking-wide">
-                {isOnline ? "Gateways Synchronized" : "Local Offline Cache"}
+                {isOnline ? "Online" : "Offline"}
               </span>
             </div>
           </div>

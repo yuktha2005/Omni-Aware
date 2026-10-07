@@ -14,7 +14,7 @@ from services.ai.translation_evaluator_service import translation_evaluator_serv
 from services.auth_service import get_current_admin
 
 router = APIRouter(
-    prefix="/api/translation-evaluation",
+    prefix="/translation-evaluation",
     tags=["Multilingual Translation Quality Evaluator"]
 )
 

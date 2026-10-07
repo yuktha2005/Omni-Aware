@@ -14,7 +14,7 @@ from services.ai.fact_verification_service import fact_verification_service
 from services.auth_service import get_current_admin
 
 router = APIRouter(
-    prefix="/api/fact-verification",
+    prefix="/fact-verification",
     tags=["AI Fact Verification Engine"]
 )
 

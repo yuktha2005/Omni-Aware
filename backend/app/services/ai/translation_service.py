@@ -18,7 +18,21 @@ LANGUAGE_CODE_MAP = {
     "kannada": "kn",
     "kn": "kn",
     "malayalam": "ml",
-    "ml": "ml"
+    "ml": "ml",
+    "bengali": "bn",
+    "bn": "bn",
+    "marathi": "mr",
+    "mr": "mr",
+    "gujarati": "gu",
+    "gu": "gu",
+    "punjabi": "pa",
+    "pa": "pa",
+    "odia": "or",
+    "or": "or",
+    "urdu": "ur",
+    "ur": "ur",
+    "assamese": "as",
+    "as": "as"
 }
 
 LANGUAGE_NAME_MAP = {
@@ -27,7 +41,14 @@ LANGUAGE_NAME_MAP = {
     "ta": "Tamil",
     "te": "Telugu",
     "kn": "Kannada",
-    "ml": "Malayalam"
+    "ml": "Malayalam",
+    "bn": "Bengali",
+    "mr": "Marathi",
+    "gu": "Gujarati",
+    "pa": "Punjabi",
+    "or": "Odia",
+    "ur": "Urdu",
+    "as": "Assamese"
 }
 
 # Rich vocabulary & phrase dictionary for public awareness in 5 Indic languages
@@ -435,10 +456,12 @@ class TranslationService:
     def _translate_single_unit(self, text: str, src_code: str, tgt_code: str) -> str:
         """
         Translates a single block or sentence with multi-tier neural fallback:
+        Tier 0: Direct Indic phrase/domain dictionary lookup
         Tier 1: Gemini LLM (if API key available)
-        Tier 2: MyMemory Neural Translation Engine
-        Tier 3: GoogleTranslator (deep-translator) / Google GTX endpoint
-        Tier 4: Local Indic Domain NLP Synthesizer
+        Tier 2: Google GTX Direct Neural Translation Endpoint
+        Tier 3: GoogleTranslator (deep-translator)
+        Tier 4: MyMemory Neural Translation Engine
+        Tier 5: Local Indic Domain NLP Synthesizer
         """
         if not text or not text.strip():
             return ""
@@ -469,28 +492,12 @@ class TranslationService:
             except Exception as e:
                 logger.warning(f"Gemini translation notice: {e}")
 
-        # Tier 2: Direct High-Capacity MyMemory Neural Engine
-        mm_trans = self._translate_with_mymemory_direct(clean_text, src_code, tgt_code)
-        if mm_trans:
-            self._cache[cache_key] = mm_trans
-            return f"{emoji_prefix}{mm_trans}" if emoji_prefix else mm_trans
-
-        # Tier 3: GoogleTranslator / Google Single Endpoint
-        try:
-            from deep_translator import GoogleTranslator
-            gt_trans = GoogleTranslator(source=src_code, target=tgt_code).translate(clean_text)
-            if gt_trans and gt_trans.strip():
-                self._cache[cache_key] = gt_trans.strip()
-                return f"{emoji_prefix}{gt_trans.strip()}" if emoji_prefix else gt_trans.strip()
-        except Exception:
-            pass
-
-        # Tier 3b: Direct HTTP endpoint
+        # Tier 2: Direct Google GTX HTTP Endpoint (High-speed & high-accuracy)
         try:
             import requests
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-            params = {"client": "gtx", "sl": src_code, "tl": tgt_code, "dt": "t", "q": clean_text[:2000]}
-            resp = requests.get("https://translate.googleapis.com/translate_a/single", params=params, headers=headers, timeout=2.0)
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            params = {"client": "gtx", "sl": src_code, "tl": tgt_code, "dt": "t", "q": clean_text[:3000]}
+            resp = requests.get("https://translate.googleapis.com/translate_a/single", params=params, headers=headers, timeout=3.0)
             if resp.status_code == 200:
                 data = resp.json()
                 if data and len(data) > 0 and len(data[0]) > 0:
@@ -501,7 +508,23 @@ class TranslationService:
         except Exception:
             pass
 
-        # Tier 4: High-Fidelity Local Indic NLP Synthesizer
+        # Tier 3: GoogleTranslator (deep-translator library)
+        try:
+            from deep_translator import GoogleTranslator
+            gt_trans = GoogleTranslator(source=src_code, target=tgt_code).translate(clean_text)
+            if gt_trans and gt_trans.strip():
+                self._cache[cache_key] = gt_trans.strip()
+                return f"{emoji_prefix}{gt_trans.strip()}" if emoji_prefix else gt_trans.strip()
+        except Exception:
+            pass
+
+        # Tier 4: Direct MyMemory Neural Engine
+        mm_trans = self._translate_with_mymemory_direct(clean_text, src_code, tgt_code)
+        if mm_trans:
+            self._cache[cache_key] = mm_trans
+            return f"{emoji_prefix}{mm_trans}" if emoji_prefix else mm_trans
+
+        # Tier 5: High-Fidelity Local Indic NLP Synthesizer
         local_res = self._local_indic_translate(clean_text, tgt_code)
         self._cache[cache_key] = local_res.strip()
         return f"{emoji_prefix}{local_res.strip()}" if emoji_prefix else local_res.strip()
